@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://gh40.net/sitemap-index.xml

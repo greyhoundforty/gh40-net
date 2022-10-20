@@ -1,96 +1,90 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Card from '../components/Card.astro';
+import PageLayout from "@/layouts/Base";
+import BlogPostPreview from "@/components/BlogPostPreview";
+import SocialList from "@/components/SocialList";
+import { sortMDByDate } from "@/util";
+import type { Post } from "@/types";
+
+const meta = {
+	title: "Astro Cactus",
+	description: "The perfect starter for your perfect blog.",
+};
+
+const MAX_POSTS = 10;
+const allPosts = await Astro.glob<Post>("./posts/*.mdx");
+const allPostsByDate = sortMDByDate(allPosts).slice(0, MAX_POSTS);
 ---
 
-<Layout title="Welcome to Astro.">
-	<main>
-		<h1>Welcome to <span class="text-gradient">Astro</span></h1>
-		<p class="instructions">
-			Check out the <code>src/pages</code> directory to get started.<br />
-			<strong>Code Challenge:</strong> Tweak the "Welcome to Astro" message above.
-		</p>
-		<ul role="list" class="link-card-grid">
-			<Card
-				href="https://docs.astro.build/"
-				title="Documentation"
-				body="Learn how Astro works and explore the official API docs."
-			/>
-			<Card
-				href="https://astro.build/integrations/"
-				title="Integrations"
-				body="Supercharge your project with new frameworks and libraries."
-			/>
-			<Card
-				href="https://astro.build/themes/"
-				title="Themes"
-				body="Explore a galaxy of community-built starter themes."
-			/>
-			<Card
-				href="https://astro.build/chat/"
-				title="Chat"
-				body="Come say hi to our amazing Discord community. ❤️"
-			/>
+<PageLayout meta={meta}>
+	<section>
+		<!-- <h1 class="mb-6 title">Welcome</h1>
+		<p class="mb-4">
+			Hi, I’m a theme for Astro, an example of how you can use this starter to
+			create a personal blog. If you want to know more about how you can
+			customise me, add more posts, and make it your own, click on one of the
+			social links which will take you to my repo.
+		</p> -->
+		<SocialList />
+	</section>
+	<section aria-label="Blog post list" class="mt-16">
+		<h2 class="mb-4 text-xl title">Posts</h2>
+		<ul class="space-y-4 sm:space-y-2">
+			{
+				allPostsByDate.map((p) => (
+					<li class="flex flex-wrap items-center gap-x-2 [&_q]:w-full">
+						<BlogPostPreview post={p} as="h2" />
+					</li>
+				))
+			}
 		</ul>
-	</main>
-</Layout>
-
-<style>
-	:root {
-		--astro-gradient: linear-gradient(0deg, #4f39fa, #da62c4);
-	}
-
-	h1 {
-		margin: 2rem 0;
-	}
-
-	main {
-		margin: auto;
-		padding: 1em;
-		max-width: 60ch;
-	}
-
-	.text-gradient {
-		font-weight: 900;
-		background-image: var(--astro-gradient);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-size: 100% 200%;
-		background-position-y: 100%;
-		border-radius: 0.4rem;
-		animation: pulse 4s ease-in-out infinite;
-	}
-
-	@keyframes pulse {
-		0%,
-		100% {
-			background-position-y: 0%;
-		}
-		50% {
-			background-position-y: 80%;
-		}
-	}
-
-	.instructions {
-		line-height: 1.6;
-		margin: 1rem 0;
-		background: #4f39fa;
-		padding: 1rem;
-		border-radius: 0.4rem;
-		color: var(--color-bg);
-	}
-
-	.instructions code {
-		font-size: 0.875em;
-		border: 0.1em solid var(--color-border);
-		border-radius: 4px;
-		padding: 0.15em 0.25em;
-	}
-
-	.link-card-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
-		gap: 1rem;
-		padding: 0;
-	}
-</style>
+	</section>
+	<section class="mt-16">
+		<h2 class="mb-4 text-xl title">Technologies</h2>
+		<ul class="space-y-4 sm:space-y-2">
+			<li>
+				<a
+					href="https://astro.build"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-block cactus-link"
+					>Astro
+				</a>:
+				<p class="inline-block sm:mt-2">Build fast websites, faster.</p>
+			</li>
+			<li>
+				<a
+					href="https://docs.astro.build/en/guides/integrations-guide/image/"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-block cactus-link"
+					>@astro/image
+				</a>:
+				<p class="inline-block sm:mt-2">
+					An Astro integration for optimising images in Astro projects.
+				</p>
+			</li>
+			<li>
+				<a
+					href="https://tailwindcss.com"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-block cactus-link"
+					>Tailwind CSS
+				</a>:
+				<p class="inline-block sm:mt-2">
+					Rapidly build modern websites without ever leaving your HTML.
+				</p>
+			</li>
+			<li>
+				<a
+					href="https://mdxjs.com/"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="inline-block cactus-link"
+					>MDX
+				</a>:
+				<p class="inline-block sm:mt-2">Markdown for the component era.</p>
+			</li>
+		</ul>
+	</section>
+</PageLayout>
