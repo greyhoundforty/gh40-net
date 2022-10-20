@@ -8,6 +8,8 @@ tags: ["github", "ibmcloud", "container-registry"]
 
 import { Image } from "@astrojs/image/components";
 
+# Overview
+
 Today I will be showing an example GitHub [Action](https://docs.github.com/en/actions) that will use [Podman][podman] to build and push a container image to the IBM Cloud [Container Registry][icr]. If your container file is not named `Dockerfile`, or is not in the root directory of your repository, update the `containerfiles` section of the yaml file.  
 
 ## Prepare Github repository
@@ -17,6 +19,16 @@ You will need to add two Action [Secrets][action-secret] for this workflow Actio
 - **IMAGE_NAME**: The name of the container image. This will be in the form of `namespace/container-image`. Ex: `ryantiffany/nginx`
 - **REGISTRY_PASSWORD**: An IBM Cloud [API Key][api-key] that is used to authenticate podman with the container registry service.
 
+## Create Workflow Directory and Actions File
+
+If the repository you are working with is not already using Github Actions, you will need to create a new workflow directory and actions file:
+
+```bash
+mkdir -p .github/workflows
+touch .github/workflows/build-push-container.yaml
+```
+
+Open the `.github/workflows/build-push-container.yaml` file in your favorite text editor, paste in the following contents, and then save the file.
 
 ```yaml
 name: Use Podman to build and push container image to IBM Cloud Registry
@@ -63,6 +75,16 @@ jobs:
     - name: Print image url
       run: echo "Image pushed to ${{ steps.push-to-icr.outputs.registry-paths }}"
 ```
+
+## Push Changes to Initiate Container Build and Push
+
+```
+git add .github/workflows/build-push-container.yaml
+git commit -m "Add build and push container action"
+git push
+```
+
+To track the progress of your Github Action open your browser to `https://github.com/YOUR_GITHUB_USER/YOUR_REPO/actions`.
 
 [podman]: https://podman.io
 [icr]: https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview

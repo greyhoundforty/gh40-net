@@ -7,7 +7,7 @@ import sitemap from "@astrojs/sitemap";
 export default defineConfig({
 	markdown: {
 		shikiConfig: {
-			theme: "dracula",
+			theme: "material-palenight",
 			wrap: true,
 		},
 	},

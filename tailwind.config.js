@@ -85,7 +85,7 @@ module.exports = {
 				".cactus-link": {
 					"@apply relative py-2 underline underline-offset-4 decoration-2 decoration-link sm:no-underline sm:py-0":
 						{},
-					"@media (min-width: 640px)": {
+					"@media (min-width: 720px)": {
 						"&:hover": {
 							"@apply sm:after:h-0.5 sm:after:bg-link": {},
 						},
