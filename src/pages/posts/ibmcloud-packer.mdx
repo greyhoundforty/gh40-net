@@ -1,7 +1,7 @@
 ---
 layout: "@/layouts/BlogPost"
 title: "Getting started with Packer on IBM Cloud"
-publishDate: 10 October 2022
+publishDate: 27 December 2022
 description: "Build a custom IBM Cloud VPC image using Packer"
 tags: ["packer", "ibmcloud", "vpc"]
 ---
@@ -49,12 +49,14 @@ For IBM Cloud our Packer block would look like this:
 packer {
   required_plugins {
     ibmcloud = {
-      version = ">=v2.2.0"
+      version = ">=v3.0.3"
       source  = "github.com/IBM/ibmcloud"
     }
   }
 }
 ```
+
+> As of this post, the latest version is `v3.0.3`. Please check the [Github repo](https://github.com/IBM/packer-plugin-ibmcloud) for the latest available version.
 
 ### Variables
 
