@@ -2,27 +2,90 @@
 layout: "@/layouts/BlogPost"
 title: "Getting Started with Terraform and the IBM Cloud"
 publishDate: 05 January 2023
-description: "Learn about Infrastructure as Code (IaC) by using Terraform to deploy an IBM Cloud VPC"
+description: "In this introduction post you will learn about the core concepts and components of HashiCorp Terraform."
 tags: ["ibmcloud", "terraform"]
 draft: true
 ---
 
-# Overview 
+# What is Terraform?
 
-[Terraform](https://www.terraform.io/) is an Infrastructure as Code (IaC) tool for creating and managing infrastrucure in a repeatable and consistent manner. Using the HashiCorp Configuration Language 
-(HCL), you define your infrastrucuture resources in configuration files and Terraform will create, update, and destroy the resources as needed to meet the desired state.
+[Terraform](https://www.terraform.io/) is an Infrastructure as Code (IaC) tool for managing infrastructure in a repeatable and consistent manner. Terraform allows you to define your infrastructure resources (Azure VMs, IBM Cloud VPCs, AWS Route 53 records, etc) in human-readable configuration files. Terraform will create, update, and destroy the resources as needed to meet your requirements.
 
- - Data sources 
- - Resources 
+## Why Use Terraform?
+
+- Track your infrastructure
+Terraform generates a plan and prompts you for your approval before modifying your infrastructure. It also keeps track of your real infrastructure in a state file, which acts as a source of truth for your environment. Terraform uses the state file to determine the changes to make to your infrastructure so that it will match your configuratio
+- Automate changes
+
+## Terraform Workflow
+
+The core Terraform workflow consists of three main stages:
+
+- **Write:** Define the resources and services required for a project. Often times this will include multiple cloud providers or services within a given platform. For example, you may need to deploy a VPC and Kubernetes cluster on IBM Cloud and then deploy your containerized application on to your newly deployed Kubernetes cluster.
+- **Plan**: Terraform will create an execution plan that outlines the proposed changes to the infrastructure. The plan will show the resources that will be created, updated, or destroyed. No changes to the resources is made until the plan is `applied`.
+- **Apply**: Applying a Terraform plan will kick off the process to create, update, or destroy the resources as needed to meet your requirements.
+
+## Core Components of Terraform
+
+### Providers 
+
+Terraform Providers are plugins that allow Terraform to interact with specific technologies. These are usually Cloud providers like IBM Cloud, AWS, Azure, etc. but can also be other technologies like Kubernetes, Docker, etc. In the following example I have defined the IBM Cloud provider and set the version to `1.49.0`.  
+
+```hcl
+terraform {
+  required_providers {
+    ibm = {
+      source = "IBM-Cloud/ibm"
+      version = "1.49.0"
+    }
+  }
+}
+```
+
+### Data Sources
+
+Data sources allow Terraform to use information defined outside of Terraform
+
+```hcl
+data "ibm_resource_group" "group" {
+  count = var.existing_resource_group != "" ? 1 : 0
+  name  = var.existing_resource_group
+}
+
+data "ibm_is_ssh_key" "sshkey" {
+  count = var.existing_ssh_key != "" ? 1 : 0
+  name  = var.existing_ssh_key
+}
+
+data "ibm_is_zones" "regional" {
+  region = var.region
+}
+```
+
+### Resources
+
+### State Files 
+
+State files are the source of truth for your environment. Terraform uses the state file to determine the changes to make to your infrastructure so that it will match your configuration. 
+
+
+Terraform will create a state file for each project you create. 
+
+
+You can store the state file locally or remotely. By default, Terraform will store the state file locally in a file named `terraform.tfstate`. You can change the location of the state file by defining a [backend](https://www.terraform.io/docs/language/settings/backends/index.html) in your Terraform configuration.
+
+
+## Tutorial
 
 In this tutorial, you will initialize a Terraform project and learn some of the basic commands to deploy a Docker container using Terraform.
 
-## Prerequisites
+
+### Prerequisites
 
 - [IBM Cloud API Key](https://docs.docker.com/get-docker/)
 - [Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli) installed
 
-## Create Project Directory and Files
+### Download Example Github Repository 
 
 Create a new directory for your Terraform project and change into that directory.
 
@@ -39,7 +102,7 @@ outlines the configuration for the resources that Terraform will create using th
   touch main.tf
 ```
 
-## Configure Terraform Provider and Resources
+### Configure Terraform Provider and Resources
 
 Open `providers.tf` in your text editor, paste in the configuration below, and save the file. The file tells Terraform to use the [Docker 
 provider](https://registry.terraform.io/providers/kreuzwerker/docker/latest/docs) to create and manage Docker resources as well as which Docker host to use for the deployment. See the [Terraform 
@@ -77,7 +140,7 @@ container port `80` to port `80` on the Docker host.
   }
 ```
 
-## Initialize Terraform
+### Initialize Terraform
 
 With the configuration files defined, initialize Terraform by executing the `init` command. The `init` command is used to download and install the provider plugins needed to manage the resources defined 
 in the configuration files.
