@@ -13,11 +13,13 @@ draft: false
 
 ## Why Use Terraform?
 
-- Platform agnostic: Terraform can be used to manage infrastructure over a wide range of Cloud providers, on-prem hypervisors, SaSS providers, custom solutions, and more.  
+- Platform agnostic: Terraform can be used to manage infrastructure over a wide range of Cloud providers, on-prem hypervisors, SaSS solutions, and more. It can be run locally, as part of a CI/CD toolchain, or via a managed provider like [Terraform Cloud][tfcloud] or [IBM Cloud Schematics][schematics]. 
 
-- Declarative and Idempotent: A tool is considered *idempotent* if running apply operations multiple times does not change the result. 
+- Declarative: The HashiCorp language (HCL) is declarative, meaning that it describes the end or desired state of the infrastructure, rather than the specific steps needed to meet the desired state. 
 
-- Automate changes: 
+- Open Source and Agentless: Terraform is open source, backed by a large developer community, and best of all `agentless`.  Terraform does not require any agents to be installed on the infrastructure being managed.
+
+Now that we've covered the what and why of Terraform, let's take a look at how Terraform actually works.
 
 ## Terraform Workflow
 
@@ -26,21 +28,24 @@ The base Terraform workflow consists of 4 main stages:
 ![](https://dsc.cloud/quickshare/tf-flow.png)
 
 ### 1. Write
-Define the resources or services you want to create, update, or manage using the HashiCorp Configuration Language (HCL).
+
+The first step is to define the resources or services you want to create, update, or manage. For local testing the files can be stored in a local directory, but for production use it is recommended to store the configuration files in a version control system like GitHub, GitLab, etc.
 
 ### 2. Initialize
-Initializing a Terraform directory will automatically download the necessary plugins and modules to support the resources and services defined in your configuration.
+
+Initializing a Terraform directory reads the configuration files and prepares the directory for use by Terraform. This includes downloading the necessary plugins and modules to support the resources and services defined in your configuration. 
 
 ### 3. Plan: 
 
-Now that the directory is initialized and the provider plugins are installed, use the `terraform plan` command to create an execution plan that outlines the changes Terraform needs to make to meet the desired state. At a high level a `terraform plan` will:
+After the directory is initialized and the provider plugins have been installed, use the `terraform plan` command to create an execution plan that outlines the changes Terraform needs to make to meet the desired state. At a high level a `terraform plan` will:
 
 - Look at the current state of deployed resources.
 - Compare the current state of the deployed resources to the desired state defined in the configuration files.
 - List the changes that will be made to meet the desired state. No changes to the resources is made until the plan is `applied`
 
 ### 4. Apply
-Applying a Terraform plan will kick off the process to create, update, or destroy the resources as needed to meet your requirements.
+
+Once Terraform has generated the plan, you can accept the changes and apply them to your infrastructure using the `terraform apply` command. Applying a Terraform plan will kick off the process to create, update, or destroy the resources outlined in your configuration files.
 
 ## Terraform Components
 
@@ -88,21 +93,28 @@ Resources are the building blocks of Terraform. Resources are defined in your Te
 
 ### Variables 
 
-#### Primitive Types
+Variables allow you to define input parameters for your Terraform configuration. These can be used to define the Resource Group for deployed resources, the VPC region to use for provisioning, or even provider credentials. Terraform supports primitive types like strings, numbers, and booleans, as well as complex types like lists and maps. 
 
-- `string`: A sequence of characters
-- `number`: A numeric value
-- `bool`: A boolean value (true or false)
+```hcl
+variable "container_name" {
+  type        = string
+  description = "Name of the container image to use"
+  default     = ""nginx:latest""
+}
 
-#### Complex Types
-
-- `list`: A list of values
-- `map`: A map of key/value pairs
-- `object`: A set of values
+variable "container_ports" {
+  type        = map
+  description = "Ports for container image"
+  default     = {
+    internal = 80
+    external = 80
+  }
+}
+```
 
 ### Data Sources
 
-Data sources allow Terraform to use/read information defined outside of Terraform. This can be information about a Cloud provider, a local file, or another Terraform managed resource. While managed resources cause Terraform to create, update, and delete infrastructure objects, data resources cause Terraform only to read objects. 
+Data sources allow Terraform to use/read information defined outside of Terraform. This can be information about a Cloud provider, a local file, or another Terraform managed resource. 
 
 ```hcl
 data "ibm_is_zones" "regional" {
@@ -110,18 +122,16 @@ data "ibm_is_zones" "regional" {
 }
 
 data "ibm_resource_group" "group" {
-  count = var.existing_resource_group != "" ? 1 : 0
   name  = var.existing_resource_group
 }
 ```
 
 ### State Files 
 
-State files are the source of truth for your environment. Terraform uses the state file to determine the changes to make to your infrastructure so that it will match your configuration. 
+State files are the source of truth for your environment. When you execute a `terraform plan`, Terraform reads the current state file and compares it to the desired state defined in your configuration files. The state file is used to determine what changes need to be made to meet the desired state.
 
 ## Tutorial
 
-In this tutorial, you will initialize a Terraform project and learn some of the basic commands to deploy a Docker container using Terraform.
 In this tutorial, you will initialize a Terraform project and learn some of the basic commands to deploy a Docker container using Terraform.
 
 ## Prerequisites
@@ -566,3 +576,7 @@ In this tutorial, you have learned how to:
 - Clean up deployed resources with the `terraform destroy` command
 
 Now that you have a basic understanding of Terraform, extend this example with the use of [Variables](https://www.terraform.io/language/values/variables#input-variables) or explore the [Terraform Registry](https://registry.terraform.io/) to find more Terraform providers and modules. 
+
+
+[tfcloud]: https://www.terraform.io/cloud
+[schematics]: https://cloud.ibm.com/docs/schematics?topic=schematics-getting-started
