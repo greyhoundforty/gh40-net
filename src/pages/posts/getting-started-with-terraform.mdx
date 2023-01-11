@@ -74,7 +74,7 @@ provider "docker" {
 
 ### Resources
 
-Resources are the building blocks of Terraform. Resources are defined in your Terraform configuration files and represent the infrastructure you want to create, update, manage, etc. In the following example I have defined a new IBM Cloud Resource Group as well as a new SSH key pair.
+Resources are the building blocks of Terraform. Resources are defined in your Terraform configuration files and represent the infrastructure you want to create, update, manage, etc. 
 
 ```hcl
   resource "docker_image" "nginx" {
@@ -93,7 +93,7 @@ Resources are the building blocks of Terraform. Resources are defined in your Te
 
 ### Variables 
 
-Variables allow you to define input parameters for your Terraform configuration. These can be used to define the Resource Group for deployed resources, the VPC region to use for provisioning, or even provider credentials. Terraform supports primitive types like strings, numbers, and booleans, as well as complex types like lists and maps. 
+Terraform [Variables][tfvars] allow you to define input parameters for your Terraform configuration. These can be used to define the Resource Group for deployed resources, the VPC region to use for provisioning, or even provider credentials. Terraform supports primitive types like strings, numbers, and booleans, as well as complex types like lists and maps. 
 
 ```hcl
 variable "container_name" {
@@ -580,3 +580,4 @@ Now that you have a basic understanding of Terraform, extend this example with t
 
 [tfcloud]: https://www.terraform.io/cloud
 [schematics]: https://cloud.ibm.com/docs/schematics?topic=schematics-getting-started
+[tfvars]: https://developer.hashicorp.com/terraform/language/values/variables
