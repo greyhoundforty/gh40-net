@@ -27,36 +27,29 @@ The base Terraform workflow consists of 4 main stages:
 
 ![](https://dsc.cloud/quickshare/tf-flow.png)
 
-### 1. Write
+**1. Write**: The first step is to define the resources or services you want to create, update, or manage. For local testing the files can be stored in a local directory, but for production use it is recommended to store the configuration files in a version control system like GitHub, GitLab, etc.
 
-The first step is to define the resources or services you want to create, update, or manage. For local testing the files can be stored in a local directory, but for production use it is recommended to store the configuration files in a version control system like GitHub, GitLab, etc.
+**2. Initialize**: Initializing a Terraform directory reads the configuration files and prepares the directory for use by Terraform. This includes downloading the necessary plugins and modules to support the resources and services defined in your configuration. 
 
-### 2. Initialize
-
-Initializing a Terraform directory reads the configuration files and prepares the directory for use by Terraform. This includes downloading the necessary plugins and modules to support the resources and services defined in your configuration. 
-
-### 3. Plan: 
-
-After the directory is initialized and the provider plugins have been installed, use the `terraform plan` command to create an execution plan that outlines the changes Terraform needs to make to meet the desired state. At a high level a `terraform plan` will:
+**3. Plan**: After the directory is initialized and the provider plugins have been installed, use the `terraform plan` command to create an execution plan that outlines the changes Terraform needs to make to meet the desired state. At a high level a `terraform plan` will:
 
 - Look at the current state of deployed resources.
 - Compare the current state of the deployed resources to the desired state defined in the configuration files.
 - List the changes that will be made to meet the desired state. No changes to the resources is made until the plan is `applied`
 
-### 4. Apply
-
-Once Terraform has generated the plan, you can accept the changes and apply them to your infrastructure using the `terraform apply` command. Applying a Terraform plan will kick off the process to create, update, or destroy the resources outlined in your configuration files.
+**4. Apply**: Once Terraform has generated the plan, you can accept the changes and apply them to your infrastructure using the `terraform apply` command. Applying a Terraform plan will kick off the process to create, update, or destroy the resources outlined in your configuration files.
 
 ## Terraform Components
 
 Terraform consists of a number of components that work together to manage infrastructure. While we won't cover every piece of Terraform, we'll hit the main components that you will need to know to get started.
 
-### Terraform Core
-The core Terraform binary that is used to manage infrastructure. 
+**## Terraform Core**
 
-### Providers
+The core Terraform binary that is used to manage infrastructure. This is the brains of the operation and is used to communicate with various provider APIs, determine order of operations, and manage the state file.
 
-Providers are Terraform lugins that allow Terraform to interact with specific technologies. These are usually Cloud providers like IBM Cloud or Azure, but can also target other technologies like Kubernetes, Docker, Hypervisors, etc. 
+**## Providers**
+
+Providers are Terraform plugins that allow Terraform to interact with specific technologies. These are usually Cloud providers like IBM Cloud or Azure, but can also target other technologies like Kubernetes, Docker, Hypervisors, etc. 
 
 ```hcl
 terraform {
@@ -72,7 +65,7 @@ provider "docker" {
 }
 ```
 
-### Resources
+**## Resources**
 
 Resources are the building blocks of Terraform. Resources are defined in your Terraform configuration files and represent the infrastructure you want to create, update, manage, etc. 
 
@@ -91,7 +84,7 @@ Resources are the building blocks of Terraform. Resources are defined in your Te
   }
 ```
 
-### Variables 
+**## Variables** 
 
 Terraform [Variables][tfvars] allow you to define input parameters for your Terraform configuration. These can be used to define the Resource Group for deployed resources, the VPC region to use for provisioning, or even provider credentials. Terraform supports primitive types like strings, numbers, and booleans, as well as complex types like lists and maps. 
 
@@ -112,7 +105,7 @@ variable "container_ports" {
 }
 ```
 
-### Data Sources
+**## Data Sources**
 
 Data sources allow Terraform to use/read information defined outside of Terraform. This can be information about a Cloud provider, a local file, or another Terraform managed resource. 
 
@@ -126,7 +119,7 @@ data "ibm_resource_group" "group" {
 }
 ```
 
-### State Files 
+**## State Files**
 
 State files are the source of truth for your environment. When you execute a `terraform plan`, Terraform reads the current state file and compares it to the desired state defined in your configuration files. The state file is used to determine what changes need to be made to meet the desired state.
 
@@ -134,12 +127,12 @@ State files are the source of truth for your environment. When you execute a `te
 
 In this tutorial, you will initialize a Terraform project and learn some of the basic commands to deploy a Docker container using Terraform.
 
-## Prerequisites
+### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Terraform CLI installed locally](https://learn.hashicorp.com/tutorials/terraform/install-cli)
 
-## Create Project Directory and Files
+### Create Project Directory and Files
 
 Create a new directory for your Terraform project and change into that directory.
 
@@ -155,7 +148,7 @@ Create the two configuration files you will need for this tutorial. The `provide
   touch main.tf
 ```
 
-## Configure Terraform Provider and Resources
+### Configure Terraform Provider and Resources
 
 Open `providers.tf` in your text editor, paste in the configuration below, and save the file. The file tells Terraform to use the [Docker provider](https://registry.terraform.io/providers/kreuzwerker/docker/latest/docs) to create and manage Docker resources as well as which Docker host to use for the deployment. See the [Terraform Registry](https://registry.terraform.io/browse/providers) for the complete list of supported Terraform Providers.
 
@@ -190,7 +183,7 @@ Open `main.tf` in your text editor, paste in the configuration below, and save t
   }
 ```
 
-## Initialize Terraform
+### Initialize Terraform
 
 With the configuration files defined, initialize Terraform by executing the `init` command. The `init` command is used to download and install the provider plugins needed to manage the resources defined in the configuration files.
 
@@ -219,7 +212,7 @@ rerun this command to reinitialize your working directory. If you forget, other
 commands will detect it and remind you to do so if necessary.
 ```
 
-## Create Terraform Plan
+### Create Terraform Plan
 
 Now that the directory is initialized and the provider plugins are installed, use the `plan` command to create an execution plan that outlines the changes Terraform needs to make to meet the desired state. At a high level a `terraform plan` will:
 
@@ -315,7 +308,7 @@ To perform exactly these actions, run the following command to apply:
     terraform apply "default.tfplan"
 ```
 
-## Apply Terraform Plan
+### Apply Terraform Plan
 
 To deploy the resources outlined in the previous `plan` step, run the `apply` command to provision the Docker container. Running the `apply` command without a saved plan file will generate a new plan and prompt you to accept the proposed changes. When you are run `terraform apply` on a saved plan you will not be prompted to accept the changes.
 
@@ -343,7 +336,7 @@ ETag: "62d6ba27-267"
 Accept-Ranges: bytes
 ```
 
-## Make a Change and Generate a New Plan
+### Make a Change and Generate a New Plan
 
 As Terraform is all about current state vs desired state, you can update the current configuration and run `plan` to see the proposed changes
 
@@ -454,7 +447,7 @@ Terraform will perform the following actions:
     }
 ```
 
-## Destroy Terraform Resources
+### Destroy Terraform Resources
 
 To clean up the resources you can issue the `destroy` command. This will generate a plan for the resources to be deleted and then prompt you to accept the changes and destroy the resources. You can also use `plan -destroy` or `apply -destroy` to initiate a destruction plan for the resources.
 

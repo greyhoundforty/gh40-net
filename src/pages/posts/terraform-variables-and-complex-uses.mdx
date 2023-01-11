@@ -1,0 +1,52 @@
+---
+layout: "@/layouts/BlogPost"
+title: "Terraform Variables by Example"
+publishDate: 11 January 2023
+description: "Take a closer look at Terraform variable types and how to use them for complex operations."
+tags: ["terraform"]
+draft: true
+---
+
+# Terraform Variables 
+
+
+## Primitive vs Complex Variables
+
+Terraform has two main types of variables: primitive and complex. Primitive variables are simple values like `strings`, `numbers`, and `booleans`. Complex variables, as the name implies, support more complex data structures like `lists`, `maps`, and `objects`. 
+
+### Primitive Variables 
+
+- **string:** A string is a sequence of characters surrounded by double quotes.
+
+```hcl
+variable "ibmcloud_region" {
+    description = "The VPC region where resources will be deployed."
+    type = string
+    default = "us-south"
+}
+```
+ 
+- **number:** A number is a numeric value. Terraform supports both integer and floating point numbers.
+
+```hcl
+variable "address_count" {
+    description = "The number of addresses assigned to the VPC subnet."
+    type = number
+    default = 128
+}
+```
+
+- **boolean:** A boolean is a value that can be either `true` or `false`.
+
+```hcl
+variable "create_public_gateway" {
+    description = "Indicates whether VPC public gateway should be created for a subnet."
+    type = bool
+    default = true
+}
+```
+
+### Complex Variables
+
+
+[tf-variable-validation]: https://developer.hashicorp.com/terraform/language/expressions/custom-conditions#input-variable-validation
