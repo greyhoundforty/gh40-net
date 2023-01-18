@@ -9,10 +9,19 @@ draft: true
 
 # Terraform Variables 
 
+Although I touched briefly on Terraform variables in my [Getting Started with Terraform][tf-getting-started] post, I wanted to take a deeper dive in to the different types of variables Terraform supports, as well as look at how to use them for complex operations.
 
 ## Primitive vs Complex Variables
 
-Terraform has two main types of variables: primitive and complex. Primitive variables are simple values like `strings`, `numbers`, and `booleans`. Complex variables, as the name implies, support more complex data structures like `lists`, `maps`, and `objects`. 
+Terraform has two main types of variables: **primitive** and **complex**. Primitive variables are simple values like `strings`, `numbers`, and `booleans`. Complex variables, as the name implies, support more complex data structures like `lists`, `maps`, and `objects`. 
+
+Terraform variables support optional attributes that can be used to provide additional information about the variable. The most common attributes associated with variables include:
+
+- `description`: A description of the variable. This is useful when sharing modules with other users. 
+- `type`: The type of the variable. This helps ensure the variable is used correctly for the resources being provisioned.
+- `default`: A default value for the variable if none is provided by the user. 
+
+To see a full list of Terraform variable attributes, check out the official [Variables][tf-variable-attributes] documentation.
 
 ### Primitive Variables 
 
@@ -40,7 +49,7 @@ variable "address_count" {
 
 ```hcl
 variable "create_public_gateway" {
-    description = "Indicates whether VPC public gateway should be created for a subnet."
+    description = "Indicates whether a VPC public gateway should be created for a subnet."
     type = bool
     default = true
 }
@@ -48,5 +57,72 @@ variable "create_public_gateway" {
 
 ### Complex Variables
 
+- **list:** A list is a collection of values surrounded by square brackets and seperated by commas. 
+
+```hcl
+variable "tags" {
+    description = "A list of tags to be applied to the VPC subnet."
+    type = list(string)
+    default = ["environment:dev", "region:us-south"]
+}
+```
+
+- **map:** A map is collection of key/value pairs. These can be useful for selecting values based on predefined parameters such as the instance profile sizes or cloud regions.
+
+```hcl
+variable "preset_configs" {
+    description = "Instance profile to use for virtual instances."
+    type = map
+    default = {
+        "small" = "bx2-2x8"
+        "medium" = "bx2-4x16"
+        "large" = "bx2-8x32"
+    }
+}
+```
+
+If I wanted to deploy a `medium` instance profile, I could use the following code in my Terraform configuration: `profile = var.preset_configs["medium"]`
+
+- **object:** An object is a collection of key/value pairs. Each key in the object must be a string, but each value can be of a different variable type. Objects are surrounded by curly braces and each key/value pair is separated by a comma.
+
+```hcl
+variable "default_configs" {
+  description = "Set of default configs for VPC environment."
+  type = list(object({
+    name     = string
+    zone     = string
+    number_of_instances = number
+    create_public_gateway = bool
+  }))
+  default = [
+    {
+      name = "dev"
+      zone = "us-south-1"
+      number_of_instances = 2
+      create_public_gateway = true
+    },
+    {
+      name = "prod"
+      zone = "us-south-2"
+      number_of_instances = 4
+      create_public_gateway = false
+    }
+  ]
+}
+```
+
+## Using `count` with Complex Variables
+
+Terraform's `count` meta-argument xxxxxxx. 
+
+## Using `for_each` with Complex Variables
+
+Terraform's `for_each` meta-argument xxxxxxx
+
+## Using `dynamic` with Complex Variables
+
+Terraform's `dynamic` meta-argument xxxxxxx
 
 [tf-variable-validation]: https://developer.hashicorp.com/terraform/language/expressions/custom-conditions#input-variable-validation
+[tf-getting-started]: https://gh40.net/posts/getting-started-with-terraform
+[tf-variable-attributes]: https://developer.hashicorp.com/terraform/language/values/variables#arguments
