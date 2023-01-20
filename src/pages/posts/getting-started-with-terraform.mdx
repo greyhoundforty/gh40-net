@@ -13,7 +13,7 @@ draft: false
 
 ## Why Use Terraform?
 
-- Platform agnostic: Terraform can be used to manage infrastructure over a wide range of Cloud providers, on-prem hypervisors, SaSS solutions, and more. It can be run locally, as part of a CI/CD toolchain, or via a managed provider like [Terraform Cloud][tfcloud] or [IBM Cloud Schematics][schematics]. 
+- Platform agnostic: Terraform can be used to manage infrastructure over a wide range of Cloud providers, on-prem hypervisors, SaaS solutions, and more. It can be run locally, as part of a CI/CD toolchain, or via a managed provider like [Terraform Cloud][tfcloud] or IBM Cloud [Schematics][schematics]. 
 
 - Declarative: The HashiCorp language (HCL) is declarative, meaning that it describes the end or desired state of the infrastructure, rather than the specific steps needed to meet the desired state. 
 
@@ -338,8 +338,6 @@ Accept-Ranges: bytes
 
 ### Make a Change and Generate a New Plan
 
-As Terraform is all about current state vs desired state, you can update the current configuration and run `plan` to see the proposed changes
-
 Open `main.tf` in your text editor, paste in this updated configuration, and save the file.
 
 ```hcl
@@ -357,7 +355,7 @@ resource "docker_container" "nginx" {
 }
 ```
 
-With the changes made run `terraform plan` and inspect the output. You should see that Terraform will destroy the existing container and create a new one based on the changes to the configuration.
+With the changes made run `terraform plan` and inspect the output. Terrafirn compares the desired state, our updated main.tf fiile, with the current state.  In order for Terraform to reach the desired state it will destroy the existing container and create a new one based on the changes to the configuration.
 
 ```bash
 terraform plan 

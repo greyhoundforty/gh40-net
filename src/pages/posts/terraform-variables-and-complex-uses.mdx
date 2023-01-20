@@ -4,7 +4,7 @@ title: "Terraform Variables by Example"
 publishDate: 11 January 2023
 description: "Take a closer look at Terraform variable types and how to use them for complex operations."
 tags: ["terraform"]
-draft: true
+draft: false
 ---
 
 # Terraform Variables 
@@ -17,7 +17,7 @@ Terraform has two main types of variables: **primitive** and **complex**. Primit
 
 Terraform variables support optional attributes that can be used to provide additional information about the variable. The most common attributes associated with variables include:
 
-- `description`: A description of the variable. This is useful when sharing modules with other users. 
+- `description`: A description of the variable. This is useful for general documentation as well as when sharing code with other users. 
 - `type`: The type of the variable. This helps ensure the variable is used correctly for the resources being provisioned.
 - `default`: A default value for the variable if none is provided by the user. 
 
@@ -25,7 +25,7 @@ To see a full list of Terraform variable attributes, check out the official [Var
 
 ### Primitive Variables 
 
-- **string:** A string is a sequence of characters surrounded by double quotes.
+- **<u>string:</u>** A string is a sequence of characters surrounded by double quotes. 
 
 ```hcl
 variable "ibmcloud_region" {
@@ -33,9 +33,15 @@ variable "ibmcloud_region" {
     type = string
     default = "us-south"
 }
+
+variable "project_prefix" {
+  description = "Prefix to add to all deployed resources"
+  type = string
+  default = "poc-lab"
+}
 ```
- 
-- **number:** A number is a numeric value. Terraform supports both integer and floating point numbers.
+
+- **<u>number:</u>** A number is a numeric value. Terraform supports both integer and floating point numbers.
 
 ```hcl
 variable "address_count" {
@@ -45,7 +51,7 @@ variable "address_count" {
 }
 ```
 
-- **boolean:** A boolean is a value that can be either `true` or `false`.
+- **<u>boolean:</u>** A boolean is a value that can be either `true` or `false`.
 
 ```hcl
 variable "create_public_gateway" {
@@ -55,9 +61,11 @@ variable "create_public_gateway" {
 }
 ```
 
+---
+
 ### Complex Variables
 
-- **list:** A list is a collection of values surrounded by square brackets and seperated by commas. 
+- **<u>list:</u>** A list is a collection of values surrounded by square brackets and seperated by commas. Values in a list can be arbitrary expressions.
 
 ```hcl
 variable "tags" {
@@ -67,7 +75,7 @@ variable "tags" {
 }
 ```
 
-- **map:** A map is collection of key/value pairs. These can be useful for selecting values based on predefined parameters such as the instance profile sizes or cloud regions.
+- **<u>map:</u>** A map is collection of key/value pairs. These can be useful for selecting values based on predefined parameters such as the instance profile sizes or cloud regions.
 
 ```hcl
 variable "preset_configs" {
@@ -81,9 +89,9 @@ variable "preset_configs" {
 }
 ```
 
-If I wanted to deploy a `medium` instance profile, I could use the following code in my Terraform configuration: `profile = var.preset_configs["medium"]`
+If I wanted to deploy a `bx2-4x16` instance, I would use the following code in my Terraform configuration: `profile = var.preset_configs["medium"]`
 
-- **object:** An object is a collection of key/value pairs. Each key in the object must be a string, but each value can be of a different variable type. Objects are surrounded by curly braces and each key/value pair is separated by a comma.
+- **<u>object:</u>** An object is a collection of key/value pairs. Each key in the object must be a string, but each value can be of a different variable type. Objects are surrounded by curly braces and each key/value pair is separated by a comma.
 
 ```hcl
 variable "default_configs" {
@@ -111,18 +119,163 @@ variable "default_configs" {
 }
 ```
 
-## Using `count` with Complex Variables
+---
 
-Terraform's `count` meta-argument xxxxxxx. 
+## Using `count` with Primitive Variables
+
+By default, a Terraform *resource* block configures one infrastructure object. To create multiple instance using the same resource declaration, you can use the [count][tf-count] meta-argument. The count meta-argument accepts an integer value that specifies the number of instances to create. 
+
+```hcl
+variable "bucket_count" {
+    description = "The number of COS buckets to create for Flowlog collectors."
+    type        = number
+    default     = 5
+}
+
+resource "ibm_cos_bucket" "flowlogs" {
+  count                = var.bucket_count
+  bucket_name          = "flowlogs-collector-${count.index}"
+  resource_instance_id = ibm_resource_instance.cos_instance.id
+  region_location      = "us-south"
+  storage_class        = "smart"
+}
+```
+
+Objects used with count start at `0` and increment by `1` for each additional instance. In the example above for instance, the first bucket created would be named `flowlogs-collector-0`, the second would be named `flowlogs-collector-1`, and so on.
 
 ## Using `for_each` with Complex Variables
 
-Terraform's `for_each` meta-argument xxxxxxx
+While primitive variables rely on count to provision multiple resources, the [for_each][tf-foreach] meta-argument can be used with complex variables to accomplish the same thing. The for_each meta-argument accepts a map or set of key/value pairs.  
+ 
+
+```hcl
+variable "security_group_rules" {
+  description = "List of security group rules to set on the consul instances"
+  default = [
+    {
+      name      = "consul_tcp_dns_in"
+      direction = "inbound"
+      remote    = "0.0.0.0/0"
+      tcp = {
+        port_min = 8600
+        port_max = 8600
+      }
+    },
+    {
+      name      = "consul_udp_dns_in"
+      direction = "inbound"
+      remote    = "0.0.0.0/0"
+      udp = {
+        port_min = 8600
+        port_max = 8600
+      }
+    },
+    {
+      name      = "consul_udp_in"
+      direction = "inbound"
+      remote    = "0.0.0.0/0"
+      udp = {
+        port_min = 8301
+        port_max = 8302
+      }
+    }
+  ]
+}
+
+resource "ibm_is_security_group_rule" "additional_tcp_rules" {
+  for_each = {
+    for rule in var.security_group_rules : rule.name => rule if lookup(rule, "tcp", null) != null
+  }
+  group      = ibm_is_security_group.consul_security_group.id
+  direction  = each.value.direction
+  remote     = each.value.remote
+  ip_version = lookup(each.value, "ip_version", null)
+
+  tcp {
+    port_min = each.value.tcp.port_min
+    port_max = each.value.tcp.port_max
+  }
+}
+```
+
+The example above would create 3 security group rules from the same resource block. The `for_each` meta-argument is used to iterate over the `security_group_rules` variable. 
 
 ## Using `dynamic` with Complex Variables
 
-Terraform's `dynamic` meta-argument xxxxxxx
+A [dynamic][tf-dynamic] block acts much like a for expression, but produces nested blocks instead of a complex typed value. In the following example I am using a dynamic block to deploy worker nodes in to each zone specified in the `worker_zones` variable. The `key` is the zone name and the `value` is the subnet ID the worker node will use when provisioned.
+
+
+```hcl
+variable "worker_zones" {
+  description = "A zone to subnet-id mapping of where IKS VPC worker nodes will be deployed."
+  type        = map(string)
+  default     = {
+    "us-south-1" = "xxxx-2a9f1e1d-xxxx-xxxx-8d9c-1234567890ab"
+    "us-south-2" = "xxxx-2a9f1e1d-1d95-4a9d-xxxx-1234567890ab"
+    "us-south-3" = "0717-2a9f1e1d-xxxx-4a9d-xxxx-1234567890ab"
+  }
+}
+
+resource "ibm_container_vpc_cluster" "iks_cluster" {
+  name                            = var.cluster_name
+  vpc_id                          = var.vpc_id
+  flavor                           = var.worker_pool_flavor
+  worker_count                    = var.worker_nodes_per_zone
+  resource_group_id               = data.ibm_resource_group.group.id
+  kube_version                    = var.kube_version
+  wait_till                       = var.wait_till
+  disable_public_service_endpoint = var.disable_public_service_endpoint
+  tags                            = var.tags
+
+  dynamic "zones" {
+    for_each = var.worker_zones
+    content {
+      name      = zones.key
+      subnet_id = zones.value
+    }
+  }
+```
+
+Without using `dynamic` blocks, the above example would look like this:
+
+```hcl
+resource "ibm_container_vpc_cluster" "iks_cluster" {
+  name                            = var.cluster_name
+  vpc_id                          = var.vpc_id
+  flavor                           = var.worker_pool_flavor
+  worker_count                    = var.worker_nodes_per_zone
+  resource_group_id               = data.ibm_resource_group.group.id
+  kube_version                    = var.kube_version
+  wait_till                       = var.wait_till
+  disable_public_service_endpoint = var.disable_public_service_endpoint
+  tags                            = var.tags
+
+ zones {
+    name = "us-south-1"
+    subnet_id = "xxxx-2a9f1e1d-xxxx-xxxx-8d9c-1234567890ab"
+  }
+  zones {
+    name = "us-south-2"
+    subnet_id = "xxxx-2a9f1e1d-1d95-4a9d-xxxx-1234567890ab"
+  }
+  zones {
+    name = "us-south-3"
+    subnet_id = "0717-2a9f1e1d-xxxx-4a9d-xxxx-1234567890ab"
+  }
+```
+
+## Next Steps:
+
+Now that you've learned a bit more about Terraform variables, I would recommand reading the following posts:
+
+- [Custom Variable Validation][tf-validation] - Learn how to validate input variables using custom condition checks.
+- [Terraform Functions][tf-functions] - Use Terraforms built-in functions to transform and combine values and outputs.
 
 [tf-variable-validation]: https://developer.hashicorp.com/terraform/language/expressions/custom-conditions#input-variable-validation
 [tf-getting-started]: https://gh40.net/posts/getting-started-with-terraform
 [tf-variable-attributes]: https://developer.hashicorp.com/terraform/language/values/variables#arguments
+[tf-count]: https://developer.hashicorp.com/terraform/language/meta-arguments/count
+[tf-foreach]: https://developer.hashicorp.com/terraform/language/meta-arguments/for_each
+[tf-dynamic]: https://developer.hashicorp.com/terraform/language/expressions/dynamic-blocks
+[tf-validation]: https://developer.hashicorp.com/terraform/language/expressions/custom-conditions#input-variable-validation
+[tf-functions]: https://developer.hashicorp.com/terraform/language/functions
