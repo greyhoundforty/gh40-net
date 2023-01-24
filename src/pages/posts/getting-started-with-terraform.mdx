@@ -355,7 +355,7 @@ resource "docker_container" "nginx" {
 }
 ```
 
-With the changes made run `terraform plan` and inspect the output. Terrafirn compares the desired state, our updated *main.tf*  file, with the current state aka our running container.  In order for Terraform to reach the desired state it will destroy the existing container and create a new one based on the changes to the configuration.
+With the changes made run `terraform plan` and inspect the output. Terraform compares the desired state, our updated *main.tf*  file, with the current state aka our running container.  In order for Terraform to reach the desired state it will destroy the existing container and create a new one based on the changes to the configuration.
 
 ```bash
 terraform plan 
