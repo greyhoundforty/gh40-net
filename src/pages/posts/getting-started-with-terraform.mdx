@@ -43,11 +43,11 @@ The base Terraform workflow consists of 4 main stages:
 
 Terraform consists of a number of components that work together to manage infrastructure. While we won't cover every piece of Terraform, we'll hit the main components that you will need to know to get started.
 
-**## Terraform Core**
+### <u>_Terraform Core_</u>
 
 The core Terraform binary that is used to manage infrastructure. This is the brains of the operation and is used to communicate with various provider APIs, determine order of operations, and manage the state file.
 
-**## Providers**
+### <u>Providers</u>
 
 Providers are Terraform plugins that allow Terraform to interact with specific technologies. These are usually Cloud providers like IBM Cloud or Azure, but can also target other technologies like Kubernetes, Docker, Hypervisors, etc. 
 
@@ -65,7 +65,7 @@ provider "docker" {
 }
 ```
 
-**## Resources**
+### - Resources
 
 Resources are the building blocks of Terraform. Resources are defined in your Terraform configuration files and represent the infrastructure you want to create, update, manage, etc. 
 
@@ -84,7 +84,7 @@ Resources are the building blocks of Terraform. Resources are defined in your Te
   }
 ```
 
-**## Variables** 
+### <u>Variables</u>
 
 Terraform [Variables][tfvars] allow you to define input parameters for your Terraform configuration. These can be used to define the Resource Group for deployed resources, the VPC region to use for provisioning, or even provider credentials. Terraform supports primitive types like strings, numbers, and booleans, as well as complex types like lists and maps. 
 
