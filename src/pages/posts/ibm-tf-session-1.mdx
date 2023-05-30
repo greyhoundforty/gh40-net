@@ -1,0 +1,55 @@
+---
+layout: "@/layouts/BlogPost"
+title: "Deploying a Consul Cluster on IBM Cloud VPC with Terraform: Part 1"
+publishDate: 01 June 2023
+description: "This post is the first in a series of posts that will walk you through deploying a Consul cluster on IBM Cloud VPC using Terraform. In this post we will cover what Terraform is, the prerequisites, and getting started by deploying an empty VPC."
+draft: true
+tags: ["ibmcloud", "terraform"]
+---
+
+## What is Terraform?
+
+[Terraform]() is an Infrastructure as Code tool that allows you to codify consistent, repeatable deployments across cloud vendors. If you need a quick into on Terraform, check out my [Getting Started with Terraform](https://gh40.net/posts/getting-started-with-terraform) post. If you are already familiar with Terraform, let's get started.
+
+## Prerequisites
+
+- [IBM Cloud API Key](https://cloud.ibm.com/docs/account?topic=account-userapikey#create_user_key)
+- [Terraform](https://www.terraform.io/downloads.html)
+
+## Getting Started
+
+Now that you have your IBM Cloud API key saved and Terraform installed, let's get started by cloning our repo and changing into the directory we just cloned.
+
+```shell
+$ git clone thing-here
+$ cd thing-here
+```
+
+### Configure Terraform
+
+Now that we are in the directory, we need to configure Terraform to use our IBM Cloud API key and VPC region. To do this, we will create a `terraform.tfvars` file and add the following:
+
+```shell
+ibmcloud_api_key = "<YOUR_API_KEY>"
+region = "<VPC_REGION>"
+```
+
+### Initialize Terraform
+
+We have the `terraform.tfvars` file created, now we need to move on to initializing Terraform. Initializing a Terraform directory reads the configuration files and prepares the directory for use by Terraform. In our case this means downloading the necessary plugins (IBM Cloud Provider, random_string) and modules to create our VPC and compute instances.
+
+To do this, run the following command:
+
+```bash
+$ terraform init
+```
+
+### Create a Terraform Plan
+
+With the directory initialized, we can create a plan. A plan is a preview of what Terraform will do when you apply the configuration. It compares the current state of the infrastructure to the desired state and then generates an execution plan describing the actions Terraform will take to make the current state match the desired state.
+
+To create a plan, run the following command:
+
+```bash
+$ 
+```
