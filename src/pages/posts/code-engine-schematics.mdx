@@ -8,6 +8,8 @@ tags: ["ibmcloud", "code-engine", "schematics"]
 
 import { Image } from "@astrojs/image/components";
 
+
+
 # Overview
 
 
@@ -25,6 +27,8 @@ This guide focuses on the CLI, but I also wrote a guide for configuring this env
     - If the workspace is 'ACTIVE', it destroys the resources and then reapplies them. If the workspace is 'INACTIVE', it applies the resources.
     - If the workspace is 'FAILED', it attempts to recover by destroying and applying the resources, up to three times.
 - The script logs the progress of destroy and apply operations using the LogDNA logger.
+
+![High level overview](/assets/rolling-iaas-current.png)
 
 ## Prerequisites
 
