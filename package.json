@@ -43,6 +43,7 @@
 		"typescript": "^4.8.2"
 	},
 	"dependencies": {
+		"@astrojs/rss": "^2.4.3",
 		"sharp": "^0.31.3"
 	}
 }
