@@ -1,0 +1,102 @@
+---
+layout: "@/layouts/BlogPost"
+title: "Refresh Schematics workspaces using Code Engine Periodic Timer"
+publishDate: 10 July 2023
+description: "Builld and run a python container image on Code Engine to refresh a Schematics workspaces"
+tags: ["ibmcloud", "code-engine", "schematics"]
+---
+
+import { Image } from "@astrojs/image/components";
+
+# Overview
+
+
+This guide will show you how to create a Code Engine project that will automatically refresh your Schematics workspace on set schedule.
+
+This guide focuses on the CLI, but I also wrote a guide for configuring this environment via the Portal. The Portal guide is available [here](https://www.craft.me/s/YDMmj5dz8ITFcC).
+
+## How it works
+
+- The script first authenticates with IBM Cloud using the API key.
+- It sets up a LogDNA logger for logging the progress of workspace management.
+- It checks the status of the workspace.
+- If the workspace is 'ACTIVE', it destroys the resources and then reapplies them. If the workspace is 'INACTIVE', it applies the resources.
+- If the workspace is 'FAILED', it attempts to recover by destroying and applying the resources, up to three times.
+- The script logs the progress of destroy and apply operations using the LogDNA logger.
+
+## Prerequisites
+
+- [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started)
+- [IBM Cloud Code Engine plugin](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli#cli)
+
+The following environment variables will be needed when configuring the Code Engine Job:
+
+- `IBMCLOUD_API_KEY`: IBM Cloud API key used to initiate the IAM authenticator.
+- `WORKSPACE_ID`: The ID of the Schematics workspace where the server is deployed.
+- `LOGDNA_INGESTION_KEY`: The LogDNA ingestion key for logging.
+
+## Login in to the CLI and target a Resource Group
+
+In order to interact with the code-engine CLI plugin, you must first login to the CLI and target a Resource Group. You can do this with the following commands:
+
+```shell
+export IBM_CLOUD_API_KEY=<API_KEY>
+ibmcloud login -r <REGION> -g <RESOURCE_GROUP>
+```
+
+## Create a Code Engine project
+
+With the region and resource group targeted, you can now create a Code Engine project. This project will be used to host both the container build and the container job that interacts with our Schematics workspace. 
+
+```shell
+ibmcloud ce project create --name <PROJECT_NAME> --tag <TAG>
+```
+
+> I highly recommend also adding tags to your Code Engine project. This will allow you to easily find the project resources later on.
+
+## Create a Code Engine buildrun
+
+The first step after our project is to create a `build`. In Code Engine, a `build`, or `image build`, is a mechanism that you can use to create a container image from source code. In this scenario, Code Engine builds an image from the Git repository source, and uploads the image to IBM Cloud Container Registry with automatic access using the `buildrun submit` command. The `buildrun` will create a specific registry namespace for the image, and will also create a `build` in the Code Engine project.
+
+```shell
+ibmcloud ce buildrun submit --name <BUILD_NAME> --source https://github.com/cloud-design-dev/code-engine-schematics-cron
+```
+
+### Following the build process
+
+With the `buildrun` submitted, you can follow the build process with the following commands:
+
+- Run `ibmcloud ce buildrun events -n <BUILD_NAME>` to get the system events of the build run.
+- Run `ibmcloud ce buildrun logs -f -n <BUILD_NAME>` to follow the logs of the build run.
+
+## Create a Code Engine secret for the running container
+
+In order to interact with the Schematics API and ensure our job is being logged properly, we meed to create a secret in Code Engine. This secret will contain the following environment variables:
+
+```shell
+export IBMCLOUD_API_KEY=<IBMCLOUD_API_KEY>
+export WORKSPACE_ID=<WORKSPACE_ID>
+export LOGDNA_INGESTION_KEY=<LOGDNA_INGESTION_KEY>
+
+ibmcloud ce secret create --name cli-sch-refresh-secret --from-literal="IBMCLOUD_API_KEY=${IBMCLOUD_API_KEY}" --from-literal="WORKSPACE_ID=${WORKSPACE_ID}" --from-literal="LOGDNA_INGESTION_KEY=${LOGDNA_INGESTION_KEY}"
+```
+
+## Create a Code Engine job
+
+With the build complete and our secrets set, we can now create the job to run our container. This job will be responsible for interacting with the Schematics API and refreshing our workspace.
+
+```shell
+ibmcloud ce job create --name cli-sch-refresh-job --env-from-secret cli-sch-refresh-secret --image <IMAGE_FROM_BUILD>
+```
+
+This will create our job, but by default it will not run until triggered. We will create a trigger in the next step.
+
+## Create a Code Engine cron trigger
+
+We will use the `Periodic Timer` option in Code Engine to trigger our job. This will allow us to set a schedule for our job to run. In this case, we will set the job to run every three days at 2:30 AM.
+
+```shell
+ibmcloud ce subscription timer create --name cli-sch-refresh-timer --destination cli-sch-refresh-job --destination-type job --schedule '30 02 */3 * *'
+```
+
+If you need help with cron syntax, I would recommend using [contab guru](https://crontab.guru/).
