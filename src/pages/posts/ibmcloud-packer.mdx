@@ -6,6 +6,8 @@ description: "Build a custom IBM Cloud VPC image using Packer"
 tags: ["packer", "ibmcloud", "vpc"]
 ---
 
+import { Image } from "@astrojs/image/components";
+
 # Overview 
 
 In this guide I will introduce you to [Packer](https://www.packer.io), it's main components, and then how to use it on the IBM Cloud to build "golden images". If you are already familiar with Packer as a concept and just want to get your hands on the code and test yourself, skip ahead to the [Creating Custom Images on IBM Cloud](#creating-custom-images-on-ibm-cloud) section.

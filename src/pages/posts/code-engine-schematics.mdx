@@ -11,7 +11,9 @@ import { Image } from "@astrojs/image/components";
 # Overview
 
 
-This guide will show you how to create a Code Engine project that will automatically refresh your Schematics workspace on set schedule.
+This guide will show you how to create a Code Engine project and job that will automatically refresh an IBM Cloud Schematics workspace on set schedule. This is useful for workspaces that are used for testing and development, and need to be refreshed on a regular basis.
+
+[Schematics]() is one of IBM Cloud's Infrastructure as Code (IaC) offerings, utilizing Terraform to manage the lifecycle of your cloud resources. 
 
 This guide focuses on the CLI, but I also wrote a guide for configuring this environment via the Portal. The Portal guide is available [here](https://www.craft.me/s/YDMmj5dz8ITFcC).
 
@@ -20,14 +22,13 @@ This guide focuses on the CLI, but I also wrote a guide for configuring this env
 - The script first authenticates with IBM Cloud using the API key.
 - It sets up a LogDNA logger for logging the progress of workspace management.
 - It checks the status of the workspace.
-- If the workspace is 'ACTIVE', it destroys the resources and then reapplies them. If the workspace is 'INACTIVE', it applies the resources.
-- If the workspace is 'FAILED', it attempts to recover by destroying and applying the resources, up to three times.
+    - If the workspace is 'ACTIVE', it destroys the resources and then reapplies them. If the workspace is 'INACTIVE', it applies the resources.
+    - If the workspace is 'FAILED', it attempts to recover by destroying and applying the resources, up to three times.
 - The script logs the progress of destroy and apply operations using the LogDNA logger.
 
 ## Prerequisites
 
 - [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started)
-- [IBM Cloud Code Engine plugin](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli#cli)
 
 The following environment variables will be needed when configuring the Code Engine Job:
 
@@ -44,9 +45,17 @@ export IBM_CLOUD_API_KEY=<API_KEY>
 ibmcloud login -r <REGION> -g <RESOURCE_GROUP>
 ```
 
+If you don't already have the [code-engine](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli#cli) plugin installed, you can install it with the following command:
+
+```shell
+ibmcloud plugin install code-engine
+```
+
 ## Create a Code Engine project
 
 With the region and resource group targeted, you can now create a Code Engine project. This project will be used to host both the container build and the container job that interacts with our Schematics workspace. 
+
+
 
 ```shell
 ibmcloud ce project create --name <PROJECT_NAME> --tag <TAG>
@@ -99,4 +108,4 @@ We will use the `Periodic Timer` option in Code Engine to trigger our job. This 
 ibmcloud ce subscription timer create --name cli-sch-refresh-timer --destination cli-sch-refresh-job --destination-type job --schedule '30 02 */3 * *'
 ```
 
-If you need help with cron syntax, I would recommend using [contab guru](https://crontab.guru/).
+If you need help with cron syntax, I would recommend using the site [contab.guru](https://crontab.guru/).

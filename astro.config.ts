@@ -12,7 +12,8 @@ export default defineConfig({
 		},
 	},
 	site: "https://gh40.net",
-	integrations: [
+        server: { port: 8080 },	
+        integrations: [
 		mdx({}),
 		tailwind({
 			config: { applyBaseStyles: false },
@@ -21,3 +22,4 @@ export default defineConfig({
 		sitemap(),
 	],
 });
+

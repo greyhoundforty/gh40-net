@@ -1,14 +1,12 @@
 ---
-layout: "@/layouts/BlogPost"
-title: "GitHub Action to build and push container to IBM Cloud Registry"
+layout: '@/layouts/BlogPost'
+title: GitHub Action to build and push container to IBM Cloud Registry
 publishDate: 15 October 2022
-description: "GitHub Action to build and push container to IBM Cloud Registry"
+description: GitHub Action to build and push container to IBM Cloud Registry
 tags: ["github", "ibmcloud", "container-registry"]
 ---
 
-import { Image } from "@astrojs/image/components";
-
-# Overview
+## Overview
 
 Today I will be showing an example GitHub [Action](https://docs.github.com/en/actions) that will use [Podman][podman] to build and push a container image to the IBM Cloud [Container Registry][icr]. If your container file is not named `Dockerfile`, or is not in the root directory of your repository, update the `containerfiles` section of the yaml file.  
 
