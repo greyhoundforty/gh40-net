@@ -16,7 +16,7 @@ If you don't have the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-g
 
 > If running these commands locally, ensure you have [`jq`](https://stedolan.github.io/jq/) installed.
 
-## Find available Bare Metal packages:
+## Find available Bare Metal packages
 
 ```shell
 ibmcloud sl order package-list --output json | jq -r '.[] | select(.type.keyName=="BARE_METAL_CPU") | .keyName,.id'
@@ -24,7 +24,7 @@ ibmcloud sl order package-list --output json | jq -r '.[] | select(.type.keyName
 
 This should return all normal bare metal packages (aka not preset configs). Unfortunately you have to sift a little bit, but looking for things like `2U` or `DUAL` will steer you in the right direction. 
 
-## Find package_key_name
+## Find `package_key_name`
 
 Once you have the package ID, in this case I am using package 839, you can get the package_key_name  with the following call:
 
@@ -85,4 +85,40 @@ ibmcloud sl call-api Product_Package getItems --init 839 --mask "prices[id,categ
 INTEL_INTEL_XEON_6140_2_30
 INTEL_INTEL_XEON_5120_2_20
 INTEL_INTEL_XEON_4110_2_10
+```
+
+## Example Terraform configuration
+
+The fully contstucted Terraform configuration would look something like this:
+
+```hcl
+resource "ibm_compute_bare_metal" "monthly_bm1" {
+  package_key_name     = "2U_DUAL_INTEL_XEON_PROCESSOR_SCALABLE_FAMILY_12_DRIVES"
+  process_key_name     = "INTEL_INTEL_XEON_5120_2_20"
+  memory               = 384
+  os_key_name          = "OS_UBUNTU_22_04_LTS_JAMMY_JELLYFISH_64_BIT"
+  hostname             = var.hostname
+  domain               = var.domain
+  datacenter           = var.datacenter
+  network_speed        = 10000
+  public_bandwidth     = 500
+  disk_key_names       = ["HARD_DRIVE_960GB_SSD", "HARD_DRIVE_960GB_SSD"]
+  hourly_billing       = false
+  ssh_key_ids          = [var.ssh_key_ids]
+  private_network_only = false
+  unbonded_network     = true
+  public_vlan_id       = var.public_vlan_id
+  private_vlan_id      = var.private_vlan_id
+
+  tags                   = var.tags
+  redundant_power_supply = true
+  storage_groups {
+    # RAID 1
+    array_type_id = 2
+    # Use the first two disks
+    hard_drives = [0, 1]
+    array_size  = 960
+
+  }
+}
 ```
