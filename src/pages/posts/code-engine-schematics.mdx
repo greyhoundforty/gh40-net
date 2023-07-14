@@ -1,115 +1,88 @@
 ---
 layout: "@/layouts/BlogPost"
-title: "Refresh Schematics workspaces using Code Engine Periodic Timer"
-publishDate: 10 July 2023
-description: "Builld and run a python container image on Code Engine to refresh a Schematics workspaces"
-tags: ["ibmcloud", "code-engine", "schematics"]
+title: "What IBM Classic package and process keys do I need?"
+publishDate: 13 July 2023
+description: "Find IBM Cloud Classic Infrastructure packages and processes related to Terraform deployments."
+tags: ["ibmcloud", "classic"]
 ---
 
 import { Image } from "@astrojs/image/components";
 
-
-
 # Overview
 
+This is a quick guide to finding the package and process keys for IBM Cloud Classic Infrastructure Terraform deployments. Due to the numerous options available, it can be difficult to find the correct package and process keys that the IBM Terraform provider requires. 
 
-This guide will show you how to create a Code Engine project and job that will automatically refresh an IBM Cloud Schematics workspace on set schedule. This is useful for workspaces that are used for testing and development, and need to be refreshed on a regular basis.
+If you don't have the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) installed locally, you can use [IBM Cloud Shell](https://cloud.ibm.com/shell) to run the commands. Cloud Shell is preconfigured with the full IBM Cloud CLI and numerous plug-ins and tools so that you can work in IBM Cloud without having to install anything locally. 
 
-[Schematics]() is one of IBM Cloud's Infrastructure as Code (IaC) offerings, utilizing Terraform to manage the lifecycle of your cloud resources. 
+> If running these commands locally, ensure you have [`jq`](https://stedolan.github.io/jq/) installed.
 
-This guide focuses on the CLI, but I also wrote a guide for configuring this environment via the Portal. The Portal guide is available [here](https://www.craft.me/s/YDMmj5dz8ITFcC).
-
-## How it works
-
-- The script first authenticates with IBM Cloud using the API key.
-- It sets up a LogDNA logger for logging the progress of workspace management.
-- It checks the status of the workspace.
-    - If the workspace is 'ACTIVE', it destroys the resources and then reapplies them. If the workspace is 'INACTIVE', it applies the resources.
-    - If the workspace is 'FAILED', it attempts to recover by destroying and applying the resources, up to three times.
-- The script logs the progress of destroy and apply operations using the LogDNA logger.
-
-![High level overview](/assets/rolling-iaas-current.png)
-
-## Prerequisites
-
-- [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started)
-
-The following environment variables will be needed when configuring the Code Engine Job:
-
-- `IBMCLOUD_API_KEY`: IBM Cloud API key used to initiate the IAM authenticator.
-- `WORKSPACE_ID`: The ID of the Schematics workspace where the server is deployed.
-- `LOGDNA_INGESTION_KEY`: The LogDNA ingestion key for logging.
-
-## Login in to the CLI and target a Resource Group
-
-In order to interact with the code-engine CLI plugin, you must first login to the CLI and target a Resource Group. You can do this with the following commands:
+## Find available Bare Metal packages:
 
 ```shell
-export IBM_CLOUD_API_KEY=<API_KEY>
-ibmcloud login -r <REGION> -g <RESOURCE_GROUP>
+ibmcloud sl order package-list --output json | jq -r '.[] | select(.type.keyName=="BARE_METAL_CPU") | .keyName,.id'
 ```
 
-If you don't already have the [code-engine](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cli#cli) plugin installed, you can install it with the following command:
+This should return all normal bare metal packages (aka not preset configs). Unfortunately you have to sift a little bit, but looking for things like `2U` or `DUAL` will steer you in the right direction. 
+
+## Find package_key_name
+
+Once you have the package ID, in this case I am using package 839, you can get the package_key_name  with the following call:
 
 ```shell
-ibmcloud plugin install code-engine
+ibmcloud sl order package-list --output json | jq -r '.[] | select(.type.keyName=="BARE_METAL_CPU") | select(.id==839) | .keyName' 
+2U_DUAL_INTEL_XEON_PROCESSOR_SCALABLE_FAMILY_12_DRIVES
 ```
 
-## Create a Code Engine project
+## Find `os_reference_code`
 
-With the region and resource group targeted, you can now create a Code Engine project. This project will be used to host both the container build and the container job that interacts with our Schematics workspace. 
-
-
+From there you can find available Operating systems for the package:
 
 ```shell
-ibmcloud ce project create --name <PROJECT_NAME> --tag <TAG>
+ibmcloud sl call-api Product_Package getItems --init 839 --mask "prices[id,categories[id,name,categoryCode],capacityRestrictionType,capacityRestrictionMinimum,capacityRestrictionMaximum,locationGroupId]" | jq -r '.[] | select(.itemCategory.categoryCode=="os") .keyName'
 ```
 
-> I highly recommend also adding tags to your Code Engine project. This will allow you to easily find the project resources later on.
-
-## Create a Code Engine buildrun
-
-The first step after our project is to create a `build`. In Code Engine, a `build`, or `image build`, is a mechanism that you can use to create a container image from source code. In this scenario, Code Engine builds an image from the Git repository source, and uploads the image to IBM Cloud Container Registry with automatic access using the `buildrun submit` command. The `buildrun` will create a specific registry namespace for the image, and will also create a `build` in the Code Engine project.
+### Example output
 
 ```shell
-ibmcloud ce buildrun submit --name <BUILD_NAME> --source https://github.com/cloud-design-dev/code-engine-schematics-cron
+ibmcloud sl call-api Product_Package getItems --init 839 --mask "prices[id,categories[id,name,categoryCode],capacityRestrictionType,capacityRestrictionMinimum,capacityRestrictionMaximum,locationGroupId]" | jq -r '.[] | select(.itemCategory.categoryCode=="os") .keyName'
+
+...
+OS_NO_OPERATING_SYSTEM
+OS_WINDOWS_SERVER_2016_DATACENTER_EDITION_64_BIT
+OS_VIRTUOZZO_7_5_VMS
+OS_WINDOWS_2012_R2_FULL_STD_64_BIT
+OS_WINDOWS_SERVER_2019_DATACENTER_EDITION_WITH_HYPERV_64_BIT
+QUANTASTOR_5_X_48_TB_MEDIUM_TIER
+OS_ROCKY_LINUX_8_X_64_BIT
+OS_CENTOS_STREAM_8_X_64_BIT
+OS_CENTOS_7_X_64_BIT
+OS_WINDOWS_SERVER_2016_DATACENTER_EDITION_WITH_HYPERV_64_BIT
+OS_WINDOWS_SERVER_2012_DATACENTER_EDITION_64_BIT
+OS_DEBIAN_9_X_STRETCH_64_BIT
+OS_WINDOWS_2012_R2_FULL_DC_64_BIT_2
+OS_QUANTASTOR_5_X_4_TB_QUANTASTOR_EXTRA_SMALL_TIER
+OS_QUANTASTOR_5_X_16_TB_QUANTASTOR_SMALL_TIER
+OS_QUANTASTOR_5_X_48_TB_QUANTASTOR_MEDIUM_TIER
+OS_WINDOWS_2012_FULL_DC_64_BIT
+OS_CITRIX_HYPERVISOR_8_2_0
+OS_UBUNTU_22_04_LTS_JAMMY_JELLYFISH_64_BIT
 ```
 
-### Following the build process
+## Find `process_key_name`
 
-With the `buildrun` submitted, you can follow the build process with the following commands:
-
-- Run `ibmcloud ce buildrun events -n <BUILD_NAME>` to get the system events of the build run.
-- Run `ibmcloud ce buildrun logs -f -n <BUILD_NAME>` to follow the logs of the build run.
-
-## Create a Code Engine secret for the running container
-
-In order to interact with the Schematics API and ensure our job is being logged properly, we meed to create a secret in Code Engine. This secret will contain the following environment variables:
+Finally, you can find the process_key_name:
 
 ```shell
-export IBMCLOUD_API_KEY=<IBMCLOUD_API_KEY>
-export WORKSPACE_ID=<WORKSPACE_ID>
-export LOGDNA_INGESTION_KEY=<LOGDNA_INGESTION_KEY>
-
-ibmcloud ce secret create --name cli-sch-refresh-secret --from-literal="IBMCLOUD_API_KEY=${IBMCLOUD_API_KEY}" --from-literal="WORKSPACE_ID=${WORKSPACE_ID}" --from-literal="LOGDNA_INGESTION_KEY=${LOGDNA_INGESTION_KEY}"
+ibmcloud sl call-api Product_Package getItems --init 839 --mask "prices[id,categories[id,name,categoryCode],capacityRestrictionType,capacityRestrictionMinimum,capacityRestrictionMaximum,locationGroupId]" | jq -r '.[] | select(.itemCategory.categoryCode=="server") .keyName'
 ```
 
-## Create a Code Engine job
-
-With the build complete and our secrets set, we can now create the job to run our container. This job will be responsible for interacting with the Schematics API and refreshing our workspace.
+### Example output for `process_key_name`
 
 ```shell
-ibmcloud ce job create --name cli-sch-refresh-job --env-from-secret cli-sch-refresh-secret --image <IMAGE_FROM_BUILD>
+
+ibmcloud sl call-api Product_Package getItems --init 839 --mask "prices[id,categories[id,name,categoryCode],capacityRestrictionType,capacityRestrictionMinimum,capacityRestrictionMaximum,locationGroupId]" | jq -r '.[] | select(.itemCategory.categoryCode=="server") .keyName'
+
+INTEL_INTEL_XEON_6140_2_30
+INTEL_INTEL_XEON_5120_2_20
+INTEL_INTEL_XEON_4110_2_10
 ```
-
-This will create our job, but by default it will not run until triggered. We will create a trigger in the next step.
-
-## Create a Code Engine cron trigger
-
-We will use the `Periodic Timer` option in Code Engine to trigger our job. This will allow us to set a schedule for our job to run. In this case, we will set the job to run every three days at 2:30 AM.
-
-```shell
-ibmcloud ce subscription timer create --name cli-sch-refresh-timer --destination cli-sch-refresh-job --destination-type job --schedule '30 02 */3 * *'
-```
-
-If you need help with cron syntax, I would recommend using the site [contab.guru](https://crontab.guru/).
