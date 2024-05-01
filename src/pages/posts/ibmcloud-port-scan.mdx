@@ -1,0 +1,45 @@
+---
+layout: "@/layouts/BlogPost"
+title: "Scan IBM Cloud Classic and VPC Servers for Open Ports"
+publishDate: 30 April 2024
+description: "Perform a quick port scan on public IPs bound to your IBM Cloud account."
+tags: ["ibmcloud", "vpc", "classic-iaas"]
+---
+
+import { Image } from "@astrojs/image/components";
+
+# Overview
+
+After getting dinged a few times by internal security scans I decided to write a script to scan all the servers in my IBM Cloud account for open ports. This python script will scan all the Floating IPs associated with your IBM Cloud account as well as the classic virtual and bare metal servers with public IPs. The script currently scans for SSH, RDP, Telnet, FTP, and SMTP but any port can be added to the scan list. 
+
+## Prerequisites
+
+- IBM Cloud API Key: This is used to authenticate with the IBM Cloud API. You can create an API key in the IBM Cloud console under `Manage > Access (IAM) > API keys` or using this [link](https://cloud.ibm.com/iam/apikeys).
+
+## Run locally
+
+### Export the IBM Cloud API Key
+
+In order to run this script locally you will need to export the API key to the environment variable `IBM_CLOUD_API_KEY`. You can do this by running the following command in your terminal:
+
+```shell
+export IBM_CLOUD_API_KEY=<your-api-key>
+```
+
+### Install the required python packages
+
+```shell
+pip install SoftLayer ibm_vpc ibm_platform_services
+```
+
+### Run the script
+
+```shell
+python scan_ibmcloud.py
+```
+
+## script
+
+<script src="https://gist.github.com/greyhoundforty/c9ff2613c724076dd1e7d48dc4a1df49.js"></script>
+
+Does this show? 
