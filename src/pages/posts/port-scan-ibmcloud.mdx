@@ -1,10 +1,9 @@
 ---
 layout: "@/layouts/BlogPost"
-title: "Scan IBM Cloud Classic and VPC Servers for Open Ports"
-publishDate: 30 April 2024
+title: "Scan IBM Cloud VPC Floating IPs and Classic IaaS for Open Ports"
+publishDate: 2 May 2024
 description: "Perform a quick port scan on public IPs bound to your IBM Cloud account."
 tags: ["ibmcloud", "vpc", "classic-iaas"]
-draft: true 
 ---
 
 import { Image } from "@astrojs/image/components";
@@ -33,10 +32,10 @@ After getting dinged a few times by internal security scans I decided to write a
     pip install SoftLayer ibm_vpc ibm_platform_services
     ```
 
-3. *Download the script*: You can use the curl command provided or copy from the embedded gist below and save it to your local machine as `scan_ibmcloud.py`.
+3. *Download the script*: You can use the wget command provided or copy from the embedded gist [below](#port-scan-script) and save it to your local machine as `scan_ibmcloud.py`.
 
     ```shell
-    curl "https://snips.cdetesting.com/f/eH9-cgu2iB?r=1" -o scan_ibmcloud.py
+    wget -O scan_ibmcloud.py https://raw.githubusercontent.com/cloud-design-dev/dts-ce-demo/main/jobs/account-port-scan/app.py
     ```
 
 4. *Invoke the script*: The script will take a few minutes to run as it scans all the floating IPs and classic infrastructure servers in your account.
@@ -68,34 +67,29 @@ If you want to automate this scan you can use IBM Cloud [Code Engine](https://cl
 
 ### CLI Method
 
-1. **Install the IBM Cloud CLI and required plugins**: If you don't have the IBM Cloud CLI installed you can download it from the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) page or use one of the pre-configured [IBM Cloud Shell](https://cloud.ibm.com/shell) environments.
+1. **Install the IBM Cloud CLI and required plugin**: If you don't have the IBM Cloud CLI installed you can download it from the [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) page or use one of the pre-configured [IBM Cloud Shell](https://cloud.ibm.com/shell) environments.
 
     ```shell
     ibmcloud plugin install code-engine
-    ibmcloud plugin install container-registry
     ```
 
-2. **Export environment variables**: The following variables will be used in the CLI commands below.
+2. **Export API Key environment variable**: The following variables will be used in the CLI commands below.
 
     - *IBMCLOUD_API_KEY*: Your IBM Cloud API key.
-    - *ICR_ENDPOINT*: The Container registry endpoint to use for the container image. Use the `Private domain name` from the list of available endpoints [here](https://cloud.ibm.com/docs/Registry?topic=Registry-registry_overview#registry_regions_local).
-    - *ICR_NAMESPACE*: The namespace in the container registry where the image will be stored. The namespace name must be unique in the region across all IBM Cloud accounts.
-    - *ICR_IMAGE*: The name of the container image to be created.
+    - *IBMCLOUD_REGION*: The IBM Cloud region where the Code Engine project will be created. See [here](https://cloud.ibm.com/docs/codeengine?topic=codeengine-regions) for a list of supported regions.
+    - *IBMCLOUD_RESOURCE_GROUP*: The resource group where the Code Engine project will be created.
 
     ```shell
     export IBMCLOUD_API_KEY=<your-api-key>
-    export ICR_ENDPOINT=private.us.icr.io
-    export ICR_NAMESPACE=<your container namespace>
-    export ICR_IMAGE=account-port-scan
+    export IBMCLOUD_REGION=<region>
+    export IBMCLOUD_RESOURCE_GROUP=<resource-group>
     ```
-
-    
 
 3. **Login to the IBM Cloud CLI**: Use the `-r` flag to target the region and the `-g` flag for the Resource Group. The resource group must be set for the Code Engine plugin to work.
 
     ```shell
     ibmcloud login
-    ibmcloud target -r <REGION> -g <RESOURCE_GROUP>
+    ibmcloud target -r "${IBMCLOUD_REGION}" -g "${IBMCLOUD_RESOURCE_GROUP}" 
     ```
 
 4. **Create the Code Engine project**: It is important to note that the project will take a few minutes to be created. Once the project is created the CLI will automatically switch to the project context. You can add tags to the project to help with organization and filtering using the `--tag` flag.
@@ -104,24 +98,52 @@ If you want to automate this scan you can use IBM Cloud [Code Engine](https://cl
     ibmcloud ce project create --name scan-ibmcloud --tag supercooltag1 --tag supercooltag2
     ```
 
-5. **Create project secrets**: There are 2 main secrets we need to create for our Code Engine job. The first is the IBM Cloud API key used to authenticate and scan our account and the second is the registry secret. The registry secret is used to authenticate with the IBM Container Registry. 
+5. **Create project secret**: The only secret required for the the script to run is your `IBM Cloud API key` that is used to authenticate and scan the account. 
 
     ```shell
     ibmcloud ce secret create --name ibmcloud-api-key --from-literal IBMCLOUD_API_KEY="${IBMCLOUD_API_KEY}"
-
-    ibmcloud ce registry create --name us-icr-secret --username iamapikey --password "${IBMCLOUD_API_KEY}" --email yourmail@example.com --server "${ICR_ENDPOINT}"
     ```
 
-6. **Create a build configuration**: With Code Engine we can build our container image directly from a git repository. The following command will create a build configuration that will build the container image from the `jobs/account-port-scan` directory in the git repository and store the container image in the IBM Container Registry.
+6. **Create a job configuration**: With Code Engine we can run our jobs from existing containers or build from a source repository. In this case we will use a prebuilt container that I created and published to Docker hub
 
     ```shell
-    ibmcloud ce build create --name port-scan-build --source https://github.com/cloud-design-dev/dts-ce-demo --context-dir jobs/account-port-scan  --image "${ICR_ENDPOINT}/${ICR_NAMESPACE}/${ICR_IMAGE}:latest" --registry-secret us-icr-registry --output json
+    ibmcloud ce job create --name port-scan-job --image greyhoundforty/ibmportscanner:amd64latest --env-from-secret ibmcloud-api-key
     ```
 
+7. **Submit the job**: The job will take a few minutes to run as it scans all the floating IPs and classic infrastructure servers in your account.
 
+    ```shell
+    ibmcloud ce jobrun submit --job port-scan-job --name port-scan-job-initial-run
+    ```
 
-## script
+8. **Inspect the results**: Use the `logs -f -n` option to follow the logs for the jobrun in real time. The scan results should provide output similar to the following:
+
+    ```shell
+    ibmcloud ce jobrun logs -f -n port-scan-job-initial-run
+    Getting logs for all instances of job run 'port-scan-job-initial-run'...
+    Getting jobrun 'port-scan-job-initial-run'...
+    Getting instances of jobrun 'port-scan-job-initial-run'...
+    OK
+
+    port-scan-job-initial-run-0-0/port-scan-job: Starting scan of floating IPs...
+    port-scan-job-initial-run-0-0/port-scan-job: Open ports on 52.xx.yy.zz: [22]
+    port-scan-job-initial-run-0-0/port-scan-job: VPC Floating IP Scan complete.
+    port-scan-job-initial-run-0-0/port-scan-job: Starting scan on classic infrastructure virtual guests...
+    port-scan-job-initial-run-0-0/port-scan-job: Open ports on 67.xx.yy.zz: [3389]
+    port-scan-job-initial-run-0-0/port-scan-job: Classic Virtual Guests Scan complete.
+    port-scan-job-initial-run-0-0/port-scan-job: Starting scan on classic infrastructure bare metals...
+    port-scan-job-initial-run-0-0/port-scan-job: Classic Bare Metals Scan complete.
+    Job run completed successfully.
+    ```
+
+9. **Automate with Code Engine cron subscription**: With Code Engine you can have your jobs and applications run on a schedule using the `Periodic Timer` subscription. The following command will create a subscription that runs the job every day at 8:30 AM CST. If the `--time-zone` flag is not provided the default is UTC.
+
+    ```shell
+    ibmcloud ce sub cron create --name port-scan-job-cron --destination port-scan-job --destination-type job --schedule '30 08 * * *' --time-zone 'America/Chicago'
+    ``` 
+<br></br>
+
+## Port Scan Script
 
 <script src="https://gist.github.com/greyhoundforty/c9ff2613c724076dd1e7d48dc4a1df49.js"></script>
 
-Does this show? 
