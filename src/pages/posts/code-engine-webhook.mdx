@@ -1,0 +1,259 @@
+---
+layout: "@/layouts/BlogPost"
+title: "Using IBM Cloud Code Engine as a Webhook Receiver"
+publishDate: 28 May 2024
+description: "Receive webhook events from Github and update an existing Code Engine application."
+tags: ["ibmcloud", "code-engine", "cli", "github"]
+---
+
+import { Image } from "@astrojs/image/components";
+
+![Overview of workflow](https://images.gh40-dev.systems/ce-fn-gh-hook.png)
+
+# Overview
+
+In this post I will show how you can use Code Engine [Functions](https://cloud.ibm.com/docs/codeengine?topic=codeengine-cefunctions) to act as a webhook receiver for Github Actions. When code is pushed to our repository, a Github Action will build and push a container image to IBM Cloud Container Registry. Once the image is pushed, a webhook will be triggered that will update an existing Code Engine application with the new image.
+
+## Prerequisites
+
+### CLI tools:
+
+- [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started) installed.
+- [Github CLI client](https://github.com/cli/cli#installation) installed and authenticated. 
+- [jq](https://jqlang.github.io/jq/) installed. 
+
+### Set required environment variables 
+
+The following variables do not have default values and need to be set in order for our CLI commands to work. 
+
+```shell
+export RESOURCE_GROUP=""
+export GITHUB_USERNAME=""
+export IBMCLOUD_REGION=""
+export IBMCLOUD_API_KEY=""
+```
+
+Next we generate a random secret for our webhook, set our ICR endpoint, and set some project related prefixes so its easier to keep track of what is deployed:
+
+```shell
+export WEBHOOK_SECRET=$(uuidgen | tr '[:upper:]' '[:lower:]')
+export PROJECT_PREFIX=$(cat /dev/urandom | LC_ALL=C tr -dc 'a-z' | fold -w 4 | head -n 1)
+export ICR_NAMESPACE="${PROJECT_PREFIX}-icr-ns"
+export ICR_IMAGE="${PROJECT_PREFIX}-simpleflask"
+export ICR_ENDPOINT="${IBMCLOUD_REGION%%-*}.icr.io"
+```
+
+## Step 1: IBM Code Engine initial configuration
+
+### Login to the IBM Cloud CLI and install plugins 
+
+If you already have the plugins installed you may be prompted to reinstall or update the `code-engine` and `container-registry` plugins depending on the version you have. 
+
+```shell
+ibmcloud login --apikey "${IBMCLOUD_API_KEY}" -r "${IBMCLOUD_REGION}" -g "${RESOURCE_GROUP}"
+ibmcloud plugin install code-engine container-registry
+```
+
+> If you would like to skip being prompted you can add the `-q -f` flags to the install command.
+
+### Login to the IBM Cloud container registry 
+
+The `cr login` command will use the already exported ICR_ENDPOINT and ICR_NAMESPACE variables to set the default namespace and endpoints for the registry.
+
+```shell
+ibmcloud cr region-set "${ICR_ENDPOINT}"
+ibmcloud cr login
+ibmcloud cr namespace-add "${ICR_NAMESPACE}"
+```
+
+### Create Code Engine Project
+
+With the region and resource group targeted we can move on to creating the Code Engine project and setting some required variables and secrets. The project will take a few moments to create after which the code-engine plugin will automatically set the project as the default for the current session. 
+
+```shell
+ibmcloud ce project create --name "${PROJECT_PREFIX}-ce-proj"
+```
+
+> If you need to target it later the syntax is `ibmcloud ce project target --name <project-name>`.
+
+### Create Code Engine Secrets 
+
+Next we create the secrets for the project. The first secret is a registry secret that will be used to authenticate with the IBM Cloud Container Registry. The second secret is a generic secret that will be used to pass environment variables to our function.
+
+```shell
+ibmcloud ce secret create --name "${PROJECT_PREFIX}-icr-secret" --format registry --username iamapikey --password "${IBMCLOUD_API_KEY}" --email "iamuser@example.com" --server "private.${ICR_ENDPOINT}"
+
+ibmcloud ce secret create --name "${PROJECT_PREFIX}-function-secret" --format generic --from-literal CE_APP="${PROJECT_PREFIX}-app" --from-literal WEBHOOK_SECRET="${WEBHOOK_SECRET}" --from-literal IBMCLOUD_API_KEY="${IBMCLOUD_API_KEY}" --from-literal ICR_NAMESPACE="${ICR_NAMESPACE}" --from-literal ICR_IMAGE="${ICR_IMAGE}"
+``` 
+
+With the initial Code Engine configuration done we can move on to setting up the Github side of the fence.
+
+## Step 2: Github CLI setup
+
+The commands below will create a new repository from an existing template repository, enable the Github action that builds and pushes our container image to ICR, and set the required secrets and variables for the action to work.
+
+In order for these to run you need to be authenticated with the Github CLI. If you have not done this previously you can run `gh auth login` to authenticate.
+
+### Create a Github repository from an existing template repo
+
+Run the `repo create` command with the `--clone` flag to clone the newly created repository and set it as the default repository for the current session. This ensures our variables and secrets are attached to the correct repoistory and that we can easily enable our Github action.
+
+```shell
+gh repo create --clone "${PROJECT_PREFIX}-ce-app" --public --template cloud-design-dev/simple-flask-ce-app && cd "${PROJECT_PREFIX}-ce-app"
+
+gh repo set-default
+
+gh workflow enable build-push-icr.yaml
+```
+
+### Set Github Secrets and Variables 
+
+The Github action that builds and pushes our container image to the IBM container registry requires the following secrets and variables to be set:
+
+```shell
+gh variable set REGISTRY_NAMESPACE --body "${ICR_NAMESPACE}"
+
+gh variable set REGISTRY_IMAGE --body "${ICR_IMAGE}"
+
+gh variable set REGISTRY_ENDPOINT --body "${ICR_ENDPOINT}"
+
+gh secret set REGISTRY_PASSWORD --body "${IBMCLOUD_API_KEY}"
+```
+
+## Step 3: Run Github Action to build and push to IBM Container Registry
+
+With the action enabled and the required secrets and variables set we can now trigger the action to build and push our container image to the IBM Cloud Container Registry.
+
+```shell
+gh workflow run build-push-icr.yaml --ref main
+```
+
+> **Note**: If this command fails, double check that you are in the cloned repository directory and the `gh repo set-default` command has been run.
+
+### Check status of build and push
+
+The Github actions are run in a workflow and each workflow has a unique ID. We can use the `gh run list` command to get the ID of the most recent run and then use the `gh run view` command to get the ID of the job that was run. From there we can view the logs of the job to see the status of the build and push.
+
+```shell
+RUN_ID=$(gh run list --workflow=build-push-icr.yaml -L 1 --json databaseId --jq '.[].databaseId')
+
+JOB_ID=$(gh run view "${RUN_ID}" --json jobs --jq '.jobs[0].databaseId')
+
+gh run view --log --job="${JOB_ID}"
+```
+
+## Step 4: Deploy Code Engine Web App and Serverless Function 
+
+If the Github action completes we can move on to creating our Code Engine application and our Webhook reciever function. First up will be our simple Python Flask application:
+
+### Create Code Engine Application from Container Image
+
+```shell
+ibmcloud ce app create --name "${PROJECT_PREFIX}-app" --registry-secret "${PROJECT_PREFIX}-icr-secret" --image "private.${ICR_ENDPOINT}/${ICR_NAMESPACE}/${ICR_IMAGE}:latest" --port "8080" 
+```
+
+It will take a few moments to deploy and configure the frontend ingress for our application. After a few minutes you should see output similar to this:
+
+```shell
+...
+Configuration 'btbx-app' is waiting for a Revision to become ready.
+Ingress has not yet been reconciled.
+Waiting for load balancer to be ready.
+Run 'ibmcloud ce application get -n btbx-app' to check the application status.
+OK
+
+https://btbx-app.xxyyzz.us-east.codeengine.appdomain.cloud
+```
+
+Grab the URL and toss it in the browser to see the application in action. **Full disclosure:** I am not good at web design. 
+
+### Create Code Engine Function from Github Repository
+
+Now we can move on to deploying our webhook function in Code Engine. The function code is built from an existing Github repository and the function is created with the environment variables we set in the `function-secret` earlier.
+
+```shell
+ibmcloud ce function create --name "${PROJECT_PREFIX}-fn" --env-from-secret "${PROJECT_PREFIX}-function-secret" --runtime python-3.11 --build-source https://github.com/cloud-design-dev/gh-webhook-function.git 
+```
+
+Code Engine will pull down the source code and build a container for our function and expose a Public endpoint. By default Code Engine will use its own pregenerated namespace to store the code bundle that is built for the function. See the [Code Engine CLI docs](https://cloud.ibm.com/docs/cli?topic=cli-cli#cli-function-create) for more information on specifying where the code-bundle is stored.
+
+```shell
+...
+Creating image 'private.de.icr.io/ce--6c272-1hijp0rx5e1d/function-btbx-fn:240528-1555-o9q6y'...
+Waiting for build run to complete...
+Build run status: 'pending'
+Build run status: 'running'
+Build run completed successfully.
+Run 'ibmcloud ce buildrun get -n btbx-fn-run-240528-105521517' to check the build run status.
+Waiting for function 'btbx-fn' to become ready...
+Function 'btbx-fn' is ready.
+OK
+Run 'ibmcloud ce function get -n btbx-fn' to see more details.
+
+https://btbx-fn.xxyyzz.us-east.codeengine.appdomain.cloud
+```
+
+## Step 5: Add Function webhook to Github repository
+
+The last step is to add our newly created webhook to the Github repository. 
+
+### Get Function Endpoint
+
+First we need to get the endpoint for our function and then we can use the Github API to create the webhook:
+
+```shell
+WEBHOOK_URL=$(ibmcloud ce fn get --name "${PROJECT_PREFIX}-fn" --output json | jq -r '.endpoint')
+```
+
+### Create Github Webhook
+
+```shell
+gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/${GITHUB_USERNAME}/${PROJECT_PREFIX}-ce-app/hooks" -f "name=web" -F "active=true" -f "events[]=workflow_run" -f "config[url]=${WEBHOOK_URL}" -f "config[content_type]=json" -f "config[insecure_ssl]=0" -f "config[secret]=${WEBHOOK_SECRET}"
+```
+
+A quick breakdown of some of the flags in the command:
+
+- `name=web` - This will always be `web` for a webhook.
+- `active=true` - This flag will enable the webhook.
+- `events[]=workflow_run` - This will trigger the webhook when a workflow is run.
+- `config[url]=${WEBHOOK_URL}` - This is the URL of the function we created earlier.
+- `config[secret]=${WEBHOOK_SECRET}` - The secret we generated earlier.
+
+If you are curious about all of the supported flags for the command, you can check the [Github API documentation](https://docs.github.com/en/rest/repos/webhooks?apiVersion=2022-11-28#create-a-repository-webhook) for more information.
+
+### Test by pushing simple update
+
+All of the pieces are in place now, we can test the webhook by pushing a simple update to the repository. Before we do that lets get the latest revision of our Code Engine application. We will compare this revision to the one we see after we push the update to the repository.
+
+```shell
+ibmcloud ce app get --name "${PROJECT_PREFIX}-app" --output json | jq -r '.status.traffic[].revisionName'
+```
+
+In our cloned directory we can run the following to kick off the Github Action > Webhook > Code Engine flow:
+
+```shell
+echo -e "\nThis is a test at $(date)" | tee -a README.md
+git add . 
+git commit -m "Testing app update process"
+git push
+```
+
+### Check Code Engine Application
+
+After the change is pushed and our Github action completes, we can check the Code Engine application to see if the new image has been deployed by comparing the revision name to the one we got earlier.
+
+```shell
+ibmcloud ce app get --name "${PROJECT_PREFIX}-app" --output json | jq -r '.status.traffic[].revisionName'
+```
+
+If all goes according to plan the revision name should have changed and the new image should be deployed.
+
+## Wrap up
+
+In this post we used IBM Cloud Code Engine to deploy a simple Python Flask application and a serverless function that acts as a webhook receiver for Github Actions to update the application whenever a new image is built. 
+
+### Additional Resources
+
+- [IBM Cloud Code Engine Documentation](https://cloud.ibm.com/docs/codeengine?topic=codeengine-getting-started)
+- [IBM Cloud CLI Documentation](https://cloud.ibm.com/docs/cli?topic=cli-getting-started)
+- [Github CLI Documentation](https://cli.github.com/manual/)
