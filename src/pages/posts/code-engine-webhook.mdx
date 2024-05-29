@@ -66,6 +66,14 @@ ibmcloud cr login
 ibmcloud cr namespace-add "${ICR_NAMESPACE}"
 ```
 
+### Generate project specific API key
+
+I like to generate a project specific API key for each project I work on. This makes it easier to manage access and permissions for the project and also track down where the API key is being used. In this case we will save the new API key to a file and then read that file in later when we need to set the API key as a secret in Github/Code Engine.
+
+```shell
+ibmcloud iam api-key-create "${PROJECT_PREFIX}-project-apikey" -d "API key for webhook demo project" --file "${PROJECT_PREFIX}-project-apikey.json"
+```
+
 ### Create Code Engine Project
 
 With the region and resource group targeted we can move on to creating the Code Engine project and setting some required variables and secrets. The project will take a few moments to create after which the code-engine plugin will automatically set the project as the default for the current session. 
@@ -81,9 +89,13 @@ ibmcloud ce project create --name "${PROJECT_PREFIX}-ce-proj"
 Next we create the secrets for the project. The first secret is a registry secret that will be used to authenticate with the IBM Cloud Container Registry. The second secret is a generic secret that will be used to pass environment variables to our function.
 
 ```shell
-ibmcloud ce secret create --name "${PROJECT_PREFIX}-icr-secret" --format registry --username iamapikey --password "${IBMCLOUD_API_KEY}" --email "iamuser@example.com" --server "private.${ICR_ENDPOINT}"
 
-ibmcloud ce secret create --name "${PROJECT_PREFIX}-function-secret" --format generic --from-literal CE_APP="${PROJECT_PREFIX}-app" --from-literal WEBHOOK_SECRET="${WEBHOOK_SECRET}" --from-literal IBMCLOUD_API_KEY="${IBMCLOUD_API_KEY}" --from-literal ICR_NAMESPACE="${ICR_NAMESPACE}" --from-literal ICR_IMAGE="${ICR_IMAGE}"
+PROJECT_API_KEY=$(jq -r '.apikey' "${PROJECT_PREFIX}-project-apikey.json")
+
+
+ibmcloud ce secret create --name "${PROJECT_PREFIX}-icr-secret" --format registry --username iamapikey --password "${PROJECT_API_KEY}" --email "iamuser@example.com" --server "private.${ICR_ENDPOINT}"
+
+ibmcloud ce secret create --name "${PROJECT_PREFIX}-function-secret" --format generic --from-literal CE_APP="${PROJECT_PREFIX}-app" --from-literal WEBHOOK_SECRET="${WEBHOOK_SECRET}" --from-literal IBMCLOUD_API_KEY="${PROJECT_API_KEY}" --from-literal ICR_NAMESPACE="${ICR_NAMESPACE}" --from-literal ICR_IMAGE="${ICR_IMAGE}"
 ``` 
 
 With the initial Code Engine configuration done we can move on to setting up the Github side of the fence.
@@ -117,7 +129,7 @@ gh variable set REGISTRY_IMAGE --body "${ICR_IMAGE}"
 
 gh variable set REGISTRY_ENDPOINT --body "${ICR_ENDPOINT}"
 
-gh secret set REGISTRY_PASSWORD --body "${IBMCLOUD_API_KEY}"
+gh secret set REGISTRY_PASSWORD --body "${PROJECT_API_KEY}"
 ```
 
 ## Step 3: Run Github Action to build and push to IBM Container Registry
@@ -139,8 +151,12 @@ RUN_ID=$(gh run list --workflow=build-push-icr.yaml -L 1 --json databaseId --jq 
 
 JOB_ID=$(gh run view "${RUN_ID}" --json jobs --jq '.jobs[0].databaseId')
 
-gh run view --log --job="${JOB_ID}"
+gh run view  --job="${JOB_ID}"
 ```
+
+You should see something similar to this:
+
+![Github Action logs](https://images.gh40-dev.systems/github-action-job.png)
 
 ## Step 4: Deploy Code Engine Web App and Serverless Function 
 
@@ -207,6 +223,8 @@ WEBHOOK_URL=$(ibmcloud ce fn get --name "${PROJECT_PREFIX}-fn" --output json | j
 
 ### Create Github Webhook
 
+The following command will create a webhook in the Github repository that will trigger when a workflow is run. You will get a JSON response, press `q` to exit the pager and return to the shell.
+
 ```shell
 gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/${GITHUB_USERNAME}/${PROJECT_PREFIX}-ce-app/hooks" -f "name=web" -F "active=true" -f "events[]=workflow_run" -f "config[url]=${WEBHOOK_URL}" -f "config[content_type]=json" -f "config[insecure_ssl]=0" -f "config[secret]=${WEBHOOK_SECRET}"
 ```
@@ -247,6 +265,15 @@ ibmcloud ce app get --name "${PROJECT_PREFIX}-app" --output json | jq -r '.statu
 ```
 
 If all goes according to plan the revision name should have changed and the new image should be deployed.
+
+```shell
+for i in {1..5}; do ibmcloud ce app get --name "${PROJECT_PREFIX}-app" --output json | jq -r '.status.traffic[].revisionName'; sleep 10; done
+gmuc-app-00001
+gmuc-app-00001
+gmuc-app-00001
+gmuc-app-00002
+gmuc-app-00002
+```
 
 ## Wrap up
 
