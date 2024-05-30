@@ -17,7 +17,7 @@ jobs:
       uses: skywalkeretw/ibm-code-engine-github-action@v1
       with:
         api-key: ${{ secrets.IBMCLOUD_API_KEY }}
-        resource-group: 'Default'
+        resource-group: ${{ vars.RESOURCE_GROUP }}
         region: ${{ vars.IBMCLOUD_REGION }}
         project: ${{ vars.CODE_ENGINE_PROJECT }}
         entity: 'app'
