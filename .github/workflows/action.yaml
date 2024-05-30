@@ -1,0 +1,27 @@
+name: Depoly to Code Engine
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  app:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Deploy Application to Code Engine
+      uses: skywalkeretw/ibm-code-engine-github-action@v1
+      with:
+        api-key: ${{ secrets.IBMCLOUD_API_KEY }}
+        resource-group: 'Default'
+        region: ${{ vars.IBMCLOUD_REGION }}
+        project: ${{ vars.CODE_ENGINE_PROJECT }}
+        entity: 'app'
+        name: ${{ vars.CODE_ENGINE_APP }}
+        build-source: './'
+        cpu: 1
+        memory: 4G
