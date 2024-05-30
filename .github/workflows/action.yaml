@@ -6,9 +6,9 @@ on:
       - main
 
 env:
-  CODE_ENGINE_REGION: ${{ vars.CODE_ENGINE_REGION}}
+  CODE_ENGINE_REGION: ${{ vars.IBMCLOUD_REGION }}
   CODE_ENGINE_PROJECT: ${{ vars.CODE_ENGINE_PROJECT }}
-  WORKLOAD_NAME: ${{ vars.WORKLOAD_NAME }}
+  WORKLOAD_NAME: ${{ vars.CODE_ENGINE_APP }}
   RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP}}
 
 jobs:
@@ -20,13 +20,13 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Test Appapp deployment to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v3
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}
         code_engine_region: ${{ env.CODE_ENGINE_REGION }}
         code_engine_project: ${{ env.CODE_ENGINE_PROJECT }}
         workload_type: 'app'
-        workload_name: "${{ env.WORKLOAD_NAME }}-app"
+        workload_name: ${{ env.WORKLOAD_NAME }}
         workload_port: '80'
         build_source: './'
