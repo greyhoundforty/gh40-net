@@ -1,27 +1,32 @@
-name: Depoly to Code Engine
+name: Test Code Engine GitHub Action
 
 on:
   push:
     branches:
       - main
 
+env:
+  CODE_ENGINE_REGION: ${{ vars.IBMCLOUD_REGION }}
+  CODE_ENGINE_PROJECT: ${{ vars.CODE_ENGINE_PROJECT }}
+  WORKLOAD_NAME: ${{ vars.CODE_ENGINE_APP }}
+  RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP}}
+
 jobs:
 
-  code-engine-deploy:
+  code-engine-app:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
       uses: actions/checkout@v3
 
-    - name: Deploy Application to Code Engine
-      uses: skywalkeretw/ibm-code-engine-github-action@v1
+    - name: Test Appapp deployment to Code Engine
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
       with:
-        api-key: ${{ secrets.IBMCLOUD_API_KEY }}
-        resource-group: ${{ vars.RESOURCE_GROUP }}
-        region: ${{ vars.IBMCLOUD_REGION }}
-        project: ${{ vars.CODE_ENGINE_PROJECT }}
-        entity: 'app'
-        name: ${{ vars.CODE_ENGINE_APP }}
-        build-source: './'
-        cpu: 1
-        memory: 4G
+        ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
+        resource_group: ${{ env.RESOURCE_GROUP }}
+        code_engine_region: ${{ env.CODE_ENGINE_REGION }}
+        code_engine_project: ${{ env.CODE_ENGINE_PROJECT }}
+        workload_type: 'app'
+        workload_name: ${{ env.WORKLOAD_NAME }}
+        workload_port: '80'
+        build_source: './'

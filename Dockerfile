@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Build the Astro project
-RUN npm run build
+RUN npm run build --outDir=dist
 
 # Stage 2: Serve the built Astro project using Nginx
 FROM nginx:stable-alpine
@@ -22,11 +22,11 @@ FROM nginx:stable-alpine
 # Copy the built Astro project from the previous stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Expose port 8080
-EXPOSE 8080
+# Expose port 80
+EXPOSE 80
 
-# Update the Nginx configuration to listen on port 8080
-RUN sed -i 's/listen\s*80;/listen 8080;/' /etc/nginx/conf.d/default.conf
+# # Update the Nginx configuration to listen on port 8080
+# RUN sed -i 's/listen\s*80;/listen 8080;/' /etc/nginx/conf.d/default.conf
 
 # Start Nginx server
 CMD ["nginx", "-g", "daemon off;"]
