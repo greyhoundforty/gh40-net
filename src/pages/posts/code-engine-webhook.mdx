@@ -111,7 +111,7 @@ In order for these to run you need to be authenticated with the Github CLI. If y
 Run the `repo create` command with the `--clone` flag to clone the newly created repository and set it as the default repository for the current session. This ensures our variables and secrets are attached to the correct repoistory and that we can easily enable our Github action.
 
 ```shell
-gh repo create --clone "${PROJECT_PREFIX}-ce-app" --public --template cloud-design-dev/simple-flask-ce-app && cd "${PROJECT_PREFIX}-ce-app"
+gh repo create --clone "${PROJECT_PREFIX}-ce-app" --public --template cloud-design-dev/ibmcloud-ce-simple-app && cd "${PROJECT_PREFIX}-ce-app"
 
 gh repo set-default
 
