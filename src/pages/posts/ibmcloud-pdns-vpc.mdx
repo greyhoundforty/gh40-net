@@ -82,23 +82,20 @@ When the provisioning completes, you should see the output of the plan, includin
 ```shell
 Apply complete! Resources: 38 added, 0 changed, 0 destroyed.
 
-Outputs:
-
 custom_resolver_ips = tolist([
-  "10.250.0.5",
+  "10.250.0.69",
   "10.250.64.4",
 ])
 lab_fqdns = [
-  "whoami.ythd-internal.lab",
-  "tools.ythd-internal.lab",
-  "requests.ythd-internal.lab",
-  "dashboard.ythd-internal.lab",
+  "whoami.ygdg-internal.lab",
+  "tools.ygdg-internal.lab",
+  "requests.ygdg-internal.lab",
+  "dashboard.ygdg-internal.lab",
 ]
-ts_router_subnet_cidr = "10.250.0.64/27"
-workload_instance_ip = "10.250.0.4"
-zone1_subnet_cidr = "10.250.0.0/26"
+tailscale_instance_ip = "10.250.0.4"
+workload_instance_ip = "10.250.0.68"
+zone1_subnet_cidr = "10.250.0.64/26"
 zone2_subnet_cidr = "10.250.64.0/26"
-
 ```
 
 ### Approve the advertised subnets in the Tailscale admin console
@@ -116,14 +113,34 @@ Under **Approved** click `Edit` and select the subnets you want to advertise and
 Once the subnets are approved, you can start the Tailscale app on your local machine and set the local DNS resolvers to the custom resolvers that were created in the VPC. You can find the IP addresses of the custom resolvers in the terraform output. If you happen to be using a Mac, you can set the custom resolvers in the Network settings or via the command line with the `networksetup` command:
 
 ```shell
-networksetup -setdnsservers Ethernet 10.250.0.5 10.250.64.4
+networksetup -setdnsservers Ethernet 10.250.0.69 10.250.64.4
 ```
 
 With the resolvers set, we can now start testing connectivity to our deployed services. Take one of the FQDNs from the terraform output and try to connect to it.
 
 ```shell
 curl "http://$(terraform output --json | jq -r '.lab_fqdns.value[0]')"
+
+% curl http://whoami.ygdg-internal.lab                                                                                                                                                                    24-09-13 - 11:30:46
+Hostname: 307a35892c5c
+IP: 127.0.0.1
+IP: ::1
+IP: 172.18.0.5
+RemoteAddr: 172.18.0.2:49386
+GET / HTTP/1.1
+Host: whoami.ygdg-internal.lab
+User-Agent: curl/8.7.1
+Accept: */*
+Accept-Encoding: gzip
+X-Forwarded-For: 10.250.0.4
+X-Forwarded-Host: whoami.ygdg-internal.lab
+X-Forwarded-Port: 80
+X-Forwarded-Proto: http
+X-Forwarded-Server: 71cfe6245938
+X-Real-Ip: 10.250.0.4
 ```
+
+![Browser test](https://images.gh40-dev.systems/Shared-Image-2024-09-13-11-32-46.png)
 
 ### Clean up
 
