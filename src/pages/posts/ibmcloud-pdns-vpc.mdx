@@ -18,11 +18,11 @@ In this demo environment we will deploy a VPC, provision a subnet router instanc
 
 Here is a hgh level overview of the solution:
 
-![Diagram of Tailscale deployment](./images/tailscale-pdns-vpc-overview.png)
+![Diagram of Tailscale deployment](https://images.gh40-dev.systems/tailscale-pdns-vpc-overview.png)
 
 Here is a closer look at the docker host that will run our sample services and expose them via Traefik:
 
-![Diagram of Tailscale deployment](./images/tailscale-pdns-vpc-docker-host.png)
+![Diagram of Traefik deployment](https://images.gh40-dev.systems/tailscale-pdns-vpc-docker-host.png)
 
 ## Pre-reqs
 
@@ -105,11 +105,11 @@ zone2_subnet_cidr = "10.250.64.0/26"
 
 By default the subnet router will not advertise any of the subnets until they are approved in the Tailscale admin console. From the admin console, navigate to the Machines tab and click the subnet router instance name. On the machine details page you should see the subnets that are available to be advertised.
 
-![Subnets awaiting advertisement approval](./images/subnets-awaiting-approval.png)
+![Subnets awaiting advertisement approval](https://images.gh40-dev.systems/subnets-awaiting-approval.png)
 
 Under **Approved** click `Edit` and select the subnets you want to advertise and click `Save`.
 
-![Approving the subnets](./images/approve-subnets.png)
+![Approving the subnets](https://images.gh40-dev.systems/awaiting-subnets.png)
 
 ### Connect to Tailscale and check connectivity
 
