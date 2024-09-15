@@ -1,0 +1,349 @@
+---
+layout: "@/layouts/Cheatsheet"
+title: "IBM Cloud CLI Cheatsheet"
+publishDate: 14 September 2024
+description: "Terminal tricks and commands for the IBM Cloud command line."
+tags: ["ibmcloud", "cli"]
+---
+
+import { Image } from "@astrojs/image/components";
+
+# Overview
+
+
+## Classic Infrastructure
+
+This includes a mix of the classic `slcli` as well as the `ibmcloud sl` module for interacting with classic IaaS resources. 
+
+### Get OS of all deployed classic instances
+I used this one when i was building some automation around port scanning our account. The idea was based on the OS returned the script would scan different ports. 
+
+```shell
+for i in $(ic sl hardware list --output json | jq -r '.[].id'); do echo "${i}"; ic sl hardware detail "${i}" --output json | jq -r '.operatingSystem.softwareLicense.softwareDescription.manufacturer'; done
+```
+
+**Example output**
+```shell
+for i in $(ic sl hardware list --output json | jq -r '.[].id'); do echo "${i}"; ic sl hardware detail "${i}" --output json | jq -r '.operatingSystem.softwareLicense.softwareDescription.manufacturer'; done
+1601113
+Microsoft
+1579427
+Microsoft
+3464728
+Rocky
+329932
+VMware
+1810921
+Juniper
+1884902
+Microsoft
+```
+
+### Ordering and billing examples
+
+Handy if you need to pull Terraform as outlined in: [[What IBM Classic package and process keys do I need?]]
+
+#### Find available packages for Bare metal servers
+This should return all normal bare metal packages (aka not preset configs). Unfortunately you have to sift a little bit, but looking for things like `2U` or `DUAL` will steer you in the right direction.
+```shell
+ibmcloud sl order package-list --output json | jq -r '.[] | select(.type.keyName=="BARE_METAL_CPU") | .keyName,.id'
+```
+
+#### Find available packages for Network Gateways
+
+```shell
+ibmcloud sl order package-list --output json | jq -r '.[] | select(.type.keyName=="BARE_METAL_GATEWAY") | .keyName,.id'
+```
+
+#### Find package_key_name
+Once you have the package ID, in this case I am using package 1057 , you can get the package_key_name with the following call:
+```shell
+ibmcloud sl order package-list --output json | jq -r '.[] | select(.type.keyName=="BARE_METAL_GATEWAY") | select(.id==1057) | .keyName'
+VIRTUAL_ROUTER_APPLIANCE_10_GPBS
+```
+
+#### List available Operating systems for VIRTUAL_ROUTER_APPLIANCE offering
+
+```shell
+ibmcloud sl order item-list VIRTUAL_ROUTER_APPLIANCE_10_GPBS --output json | jq -r '.[] | select(.itemCategory.categoryCode=="os") | .keyName'
+```
+To check for 1GB appliance options change `VIRTUAL_ROUTER_APPLIANCE_10_GPBS` to `VIRTUAL_ROUTER_APPLIANCE_1_GPBS`
+
+**Example Output**
+
+```shell
+ibmcloud sl order item-list VIRTUAL_ROUTER_APPLIANCE_1_GPBS --output json | jq -r '.[] | select(.itemCategory.categoryCode=="os") | .keyName'
+OS_JUNIPER_VSRX_19_4_UP_TO_1GBPS_STANDARD_SRIOV
+OS_VIRTUAL_ROUTER_APPLIANCE_19_X_UP_TO_2_GBPS_SUBSCRIPTION_EDITION_64_BIT
+OS_JUNIPER_VSRX_22_2R2S2_UP_TO_1GBPS_STANDARD
+OS_VIRTUAL_FORTIGATE_7_4_3_UP_TO_1G_WITH_UBUNTU_20_04_LTS
+OS_JUNIPER_VSRX_21_4R3_UP_TO_1GBPS_STANDARD
+OS_JUNIPER_VSRX_19_4R3S2_UP_TO_1GBPS_STANDARD
+OS_VIRTUAL_ROUTER_APPLIANCE_20_X_UP_TO_2_GBPS_SUBSCRIPTION_EDITION_64_BIT
+OS_VYATTA_5600_5_X_UP_TO_1GBPS_SUBSCRIPTION_EDITION_64_BIT
+OS_NETWORK_GATEWAY_APPLIANCE_1GBPS_BRING_YOUR_OWN_APPLIANCE
+OS_JUNIPER_VSRX_18_4_UP_TO_1GBPS_STANDARD_SRIOV
+OS_JUNIPER_VSRX_20_4R2S2_UP_TO_1GBPS_STANDARD
+OS_JUNIPER_VSRX_21_3R2S1_UP_TO_1GBPS_STANDARD
+OS_JUNIPER_VSRX_20_4R3S2_UP_TO_1GBPS_STANDARD
+OS_JUNIPER_VSRX_15_X_UP_TO_1GBPS_STANDARD_SRIOV
+OS_JUNIPER_VSRX_23_2R1S1_UP_TO_1GBPS_STANDARD
+OS_VIRTUAL_FORTIGATE_7_4_1_UP_TO_1G_WITH_UBUNTU_20_04_LTS
+OS_VIRTUAL_FORTIGATE_7_4_2_UP_TO_1G_WITH_UBUNTU_20_04_LTS
+OS_VIRTUAL_FORTIGATE_7_4_4_UP_TO_1G_WITH_UBUNTU_2
+OS_JUNIPER_VSRX_15_X_UP_TO_1GBPS_STANDARD
+OS_NO_OPERATING_SYSTEM
+OS_JUNIPER_VSRX_19_4R2S3_UP_TO_1GBPS_STANDARD
+OS_UBUNTU_22_04_LTS_JAMMY_JELLYFISH_64_BIT
+```
+
+**Example Output**
+
+```shell
+ibmcloud sl order item-list VIRTUAL_ROUTER_APPLIANCE_10_GPBS --output json | jq -r '.[] | select(.itemCategory.categoryCode=="os") | .keyName'
+OS_JUNIPER_VSRX_20_4R2S2_UP_TO_10GBPS_STANDARD
+OS_VMWARE_SERVER_VIRTUALIZATION_6_7_UPDATE_3_UEFI
+OS_JUNIPER_VSRX_23_2R1S1_UP_TO_10GBPS_STANDARD
+OS_JUNIPER_VSRX_19_4R3S2_UP_TO_10GBPS_STANDARD
+OS_JUNIPER_VSRX_21_3R2S1_UP_TO_10GBPS_STANDARD
+OS_VIRTUAL_ROUTER_APPLIANCE_20_X_UP_TO_20_GBPS_SUBSCRIPTION_EDITION_64_BIT
+OS_VMWARE_SERVER_VIRTUALIZATION_7_X_3_C_UEFI
+OS_NETWORK_GATEWAY_APPLIANCE_10GBPS_BRING_YOUR_OWN_APPLIANCE
+OS_JUNIPER_VSRX_19_4_UP_TO_10GBPS_STANDARD_SRIOV
+OS_JUNIPER_VSRX_21_4R3_UP_TO_10GBPS_STANDARD
+OS_JUNIPER_VSRX_22_2R2S2_UP_TO_10GBPS_STANDARD
+OS_VIRTUAL_FORTIGATE_7_4_3_UP_TO_10G_WITH_UBUNTU_20_04_LTS
+OS_VMWARE_SERVER_VIRTUALIZATION_6_7_UPDATE_3
+OS_VMWARE_SERVER_VIRTUALIZATION_7_0_UPDATE_3_I_UEFI
+OS_VMWARE_SERVER_VIRTUALIZATION_7_0_UPDATE_3I_UEFI
+OS_VIRTUAL_FORTIGATE_7_4_1_UP_TO_10G_WITH_UBUNTU_20_04_LTS
+OS_JUNIPER_VSRX_19_4R2S3_UP_TO_10GBPS_STANDARD
+OS_VIRTUAL_FORTIGATE_7_4_4_UP_TO_10G_WITH_UBUNTU_20_04_LTS
+OS_JUNIPER_VSRX_15_X_UP_TO_10_GBPS_STANDARD
+OS_VIRTUAL_FORTIGATE_7_4_2_UP_TO_10G_WITH_UBUNTU_20_04_LTS
+OS_VIRTUAL_ROUTER_APPLIANCE_19_X_UP_TO_20_GBPS_SUBSCRIPTION_EDITION_64_BIT
+OS_JUNIPER_VSRX_20_4R3S2_UP_TO_10GBPS_STANDARD
+OS_NO_OPERATING_SYSTEM
+OS_JUNIPER_VSRX_15_X_UP_TO_10GBPS_STANDARD_SRIOV
+OS_UBUNTU_22_04_LTS_JAMMY_JELLYFISH_64_BIT
+```
+
+### Add permission to classic user
+
+```shell
+ibmcloud sl user permission-edit USER_ID --enable true --permission SERVER_ADD
+```
+
+### Get bare metal server frontend network components
+
+```shell
+slcli call-api SoftLayer_Hardware_Server getFrontendNetworkComponents --id SERVER_ID
+```
+
+### Get bare metal server backend network components
+
+```shell
+slcli call-api SoftLayer_Hardware_Server getBackendNetworkComponents --id SERVER_ID
+```
+
+## Retrieve the currently set ICR endpoint 
+
+```shell
+ibmcloud cr info | sed "3q;d" | awk '{for(i=1;i<=NF;i++) if ($i=="Registry") print $(i+1)}'
+```
+
+## IAM 
+
+### Get IAM Token using API Key
+
+Get an IAM Token using your IBM Cloud API key and export it as environment variable `TOKEN`
+
+```shell
+curl -s -X POST "https://iam.cloud.ibm.com/identity/token" \
+	--header "Content-Type: application/x-www-form-urlencoded" \
+	--header "Accept: application/json" \
+	--data-urlencode "grant_type=urn:ibm:params:oauth:grant-type:apikey" \
+	--data-urlencode "apikey=${IBMCLOUD_API_KEY}" \
+	| jq -r '.access_token'
+```
+
+### Create api key and save to file
+
+```shell
+ibmcloud iam api-key-create KEY_NAME -d "Description of API key for easier tracking" --file "$HOME/apikey.json"
+```
+
+### Simple search by resource name
+
+```shell
+ibmcloud resource search 'name:devcluster'
+```
+
+### Return CRN of a resource named devcluster
+
+```
+ibmcloud resource search 'name:devcluster' --output json | jq -r '.items[].crn'
+```
+
+### Search for resources by cloud tag
+
+```shell
+ibmcloud resource search 'tags:ryantiffany' --output json | jq -r '.items[].name'
+```
+
+If you have `key:value` style tags, simply wrap them in double quotes
+
+```shell
+ibmcloud resource search 'tags:"owner:ryantiffany"' --output json | jq -r '.items[].name'
+```
+
+### Search by cloud tag and return resource CRNs
+
+```shell
+ibmcloud resource search 'tags:ryantiffany' --output json | jq -r  '.items[].crn'
+```
+
+### Search by cloud tag and return resource types
+
+```shell
+ibmcloud resource search 'tags:ryantiffany' --output json | jq -r  '.items[].type'
+```
+
+### Using the AND operator to target a region and tag for search
+
+```shell
+ibmcloud resource search "region:us-south AND tags:\"owner:ryantiffany\"" --output json | jq -r '.items[].crn'
+```
+
+### Search classic infrastructure objects 
+
+```shell
+ibmcloud resource search -p classic-infrastructure --output json
+```
+
+###  Search classic infrastructure by tag 
+
+```shell
+ibmcloud resource search "tagReferences.tag.name:ryantiffany" -p classic-infrastructure --output json
+```
+### Search by classic tag and return resource types
+
+```shell
+ibmcloud resource search "tagReferences.tag.name:ryantiffany" -p classic-infrastructure --output json | jq -r '.items[].resourceType'
+```
+
+### Search classic infrastructure for virtual instances filtered by a specific tag
+
+```shell
+ibmcloud resource search "tagReferences.tag.name:ryantiffany _objectType:SoftLayer_Virtual_Guest" -p classic-infrastructure --output json 
+```
+
+### Search classic virtual servers by classic tag and return FQDNs
+
+```shell
+ibmcloud resource search "tagReferences.tag.name:ryantiffany _objectType:SoftLayer_Virtual_Guest" -p classic-infrastructure --output json | jq -r '.items[].resource.fullyQualifiedDomainName'
+```
+
+#### Return instance ID's 
+
+```shell
+ibmcloud resource search "tagReferences.tag.name:<tag> _objectType:SoftLayer_Virtual_Guest" -p classic-infrastructure --output json | jq -r '.items[].resource.id'
+```
+
+## VPC 
+
+## Images
+
+### Get all public x86 Ubuntu images in a region
+
+```shell
+ibmcloud is images --visibility public --output json | jq -r '.[] | select(.status=="available") | select(.operating_system.architecture=="amd64") | select(.name | startswith("ibm-ubuntu")) | .name,.id'
+```
+
+Other filtering options for operating systems:
+- ibm-debian
+- ibm-centos-stream
+- ibm-fedora
+- ibm-redhat
+- ibm-rocky-linux
+- ibm-sles
+- ibm-windows-server
+- ibm-esxi
+
+### List all available private images
+
+```shell
+ibmcloud is images --visibility private --output json | jq -r '.[] | select(.status=="available") | .name,.id'
+```
+
+### VPC import image from ICOS
+
+```shell
+ibmcloud is image-create IMAGE_NAME --file cos://REGION/BUCKET/IMAGE.qcow2 --os-name ubuntu-18-04-amd64 --resource-group-id RESOURCE_GROUP_ID
+```
+
+### Find available x86 OS families
+
+```shell
+ibmcloud is images --visibility public --json | jq -r '.[] | select(.status=="available") | select(.operating_system.architecture=="amd64") \
+	| select(.operating_system.family) | .operating_system.family' | sort -u
+```
+## VPNs
+
+### Scan all regions for VPN servers and gateways
+
+```shell
+for i in $(ibmcloud is regions --output json | jq -r '.[].name'); do echo "checking region ${i}"; ibmcloud target -r "${i}" -q > /dev/null 2>&1; ibmcloud is vpns --output json; ibmcloud is vpn-svs --output json; echo""; done
+```
+
+## Subnets
+
+### Find all subnets for a specific VPC and return names and ids
+
+```shell
+ibmcloud is subnets --output json | jq -r '.[] | select(.vpc.name=="VPCNAME") | .name,.id'
+```
+
+If you have the VPC set as an environment variable, i.e. `VPC_NAME` use this command instead:
+
+```shell
+export VPC_NAME="YOUR_VPC_NAME"
+ibmcloud is subnets --output json | jq -r '.[] | select(.vpc.name=='env.VPC_NAME') | .name,.id'
+```
+
+## Network Interfaces and IPs
+
+### Get secondary interfaces for a virtual instance
+
+```shell
+ibmcloud is instance INSTANCE_NAME/ID --output json | jq -r '.network_interfaces[] | select(.type=="secondary") | .name,.id'   
+```
+
+### List all floating IPs 
+
+This will list the floating IPs in the currently targeted region 
+
+```shell
+ibmcloud is ips --output json | jq -r '.[].address'
+```
+
+To scan all the regions, run the following:
+
+```shell
+for i in $(ibmcloud is regions --output json | jq -r '.[].name'); do echo "checking region ${i}"; ibmcloud target -r "${i}" -q > /dev/null 2>&1; ibmcloud ibmcloud ips --output json | jq -r '.[].address'; done
+```
+
+## Get Windows administrator password
+
+In VPC Windows server passwords are encrypted using an SSH key that is attached to the server when it is provisioned. To retrieve the password run the following command.  
+
+```shell
+ibmcloud is instance-initialization-values VPC_INSTANCE_ID --private-key @~/.ssh/path_to_private_pem
+```
+
+If you need to generate a Windows compatible SSH key, run this command:
+
+```shell
+ssh-keygen -m PEM -t rsa -C "user_ID"
+```
+

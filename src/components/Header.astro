@@ -52,6 +52,9 @@ const url = new URL(Astro.request.url);
 			<a href="/posts" aria-current={url.pathname === "/posts" ? "page" : false}
 				>Blog
 			</a>
+                        <a href="/cheatsheets" aria-current={url.pathname === "/cheatsheets" ? "page" : false}
+                                >Cheatsheets
+                        </a>
 		</nav>
 	</span>
 	<ThemeToggle />

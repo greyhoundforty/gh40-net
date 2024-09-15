@@ -1,0 +1,96 @@
+---
+layout: "@/layouts/Cheatsheet"
+title: "Kubectl cheatsheet"
+publishDate: 13 September 2024
+description: "Kubectl commands for configuring and managing your kubernetes cluster."
+tags: ["ibmcloud", "cli"]
+---
+
+
+
+## Kubernetes Basics
+
+- **kubectl version**: Check the Kubernetes client and server versions.
+- **kubectl cluster-info**: View cluster details.
+- **kubectl get pods**: List all pods in the current namespace
+- **kubectl get nodes**: List all nodes in the cluster. 
+    - **kubectl get nodes --show-labels**: List all nodes with labels.
+    - **kubectl get nodes -o wide**: List all nodes with additional details.
+- **kubectl get namespaces**: List all namespaces in the cluster.
+- **kubectl describe pod [pod-name]**: Get detailed information about a pod.
+
+## Creating and Managing Resources:
+
+- **kubectl create -f [yaml-file]**: Create a resource from a YAML file.
+- **kubectl apply -f [yaml-file]**: Apply changes to a resource.
+- **kubectl delete [resource-type] [resource-name]**: Delete a resource.
+- **kubectl edit [resource-type] [resource-name]**: Edit a resource in the default text editor.
+- **kubectl get [resource-type]**: List resources of a specific type
+- **kubectl logs [pod-name]**: View logs of a pod.
+
+## Scaling:
+
+- **kubectl scale deployment [deployment-name] --replicas=[num-replicas]**: Scale a deployment.
+- **kubectl autoscale deployment [deployment-name] --min=[min-replicas] --max=[max-replicas]**: Autoscale a deployment.
+
+## Networking:
+
+- **kubectl expose [resource-type] [resource-name] --port=[port] --target-port=[target-port] --type=[service-type]:**Expose a resource as a service.
+- **kubectl get svc:** List services.
+- **kubectl port-forward [pod-name] [local-port]:[pod-port]:** Forward ports from a local machine to a pod.
+
+## Configuration:
+
+- **kubectl config view:** View the current configuration.
+- **kubectl config use-context [context-name]:** Set the current context.
+
+## Pods:
+
+- **kubectl exec -it [pod-name] -- [command]:** Execute a command in a pod.
+- **kubectl run [pod-name] --image=[image-name]:** Create a new pod running a specific image.
+
+## Namespaces:
+
+- **kubectl create namespace [namespace-name]:** Create a new namespace.
+- **kubectl get namespaces:** List namespaces.
+- **kubectl config set-context --current --namespace=[namespace-name]:** Set the default namespace.
+
+## Secrets and ConfigMaps:
+
+- **kubectl create secret generic [secret-name] --from-literal=[key]=[value]:** Create a secret.
+- **kubectl create configmap [configmap-name] --from-literal=[key]=[value]:** Create a ConfigMap.
+- **kubectl describe secret [secret-name]:** View secret details.
+- **kubectl describe configmap [configmap-name]:** View ConfigMap details.
+
+## Storage:
+
+- **kubectl get pv:** List persistent volumes.
+- **kubectl get pvc:** List persistent volume claims.
+
+## Nodes
+
+- **kubectl label node [node-name] [node-label]:** Label a node.
+- **kubectl taint node [node-name] [taint-key]=[taint-value]:[taint-effect]:** Taint a node.
+
+
+## Examples
+
+### Update deployment image
+
+```shell
+kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1
+```
+
+### Get all used nodeport ports 
+
+```shell
+kubectl get svc --all-namespaces --sort-by=.spec.ports[0].nodePort -o go-template="{{range .items}}{{range.spec.ports}}{{if .nodePort}}{{.nodePort}}{{printf \"\n\"}}{{end}}{{end}}{{end}}"
+```
+
+
+### exec in to a container and check DNS
+
+```shell
+kubectl exec -i -t dnsutils -- nslookup kubernetes.default
+```
+
