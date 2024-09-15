@@ -25,6 +25,12 @@ interface Post {
 	tags?: string[];
 }
 
+interface Cheatsheet {
+	title: string;
+	description: string;
+	tags?: string[];
+}
+
 export type {
 	MDXInstance,
 	Page,
@@ -33,4 +39,5 @@ export type {
 	SiteMeta,
 	PaginationLink,
 	Post,
+    Cheatsheet,
 };

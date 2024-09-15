@@ -6,8 +6,6 @@ description: "Kubectl commands for configuring and managing your kubernetes clus
 tags: ["ibmcloud", "cli"]
 ---
 
-
-
 ## Kubernetes Basics
 
 - **kubectl version**: Check the Kubernetes client and server versions.
@@ -72,7 +70,6 @@ tags: ["ibmcloud", "cli"]
 - **kubectl label node [node-name] [node-label]:** Label a node.
 - **kubectl taint node [node-name] [taint-key]=[taint-value]:[taint-effect]:** Taint a node.
 
-
 ## Examples
 
 ### Update deployment image
@@ -87,8 +84,7 @@ kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1
 kubectl get svc --all-namespaces --sort-by=.spec.ports[0].nodePort -o go-template="{{range .items}}{{range.spec.ports}}{{if .nodePort}}{{.nodePort}}{{printf \"\n\"}}{{end}}{{end}}{{end}}"
 ```
 
-
-### exec in to a container and check DNS
+### Exec in to a container and check DNS
 
 ```shell
 kubectl exec -i -t dnsutils -- nslookup kubernetes.default

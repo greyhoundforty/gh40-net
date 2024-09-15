@@ -2,7 +2,7 @@
 import BaseLayout from "./Base.astro";
 import { getLocaleTime, getPreviousAndNextPosts, sortMDByDate } from "src/util";
 import Paginator from "@/components/Paginator";
-import type { Post } from "@/types";
+import type { Cheatsheet } from "@/types";
 
 const {
 	content: { title, description, publishDate, tags },
@@ -12,7 +12,7 @@ const date = new Date(publishDate);
 const datetime = date.toISOString();
 const postDate = getLocaleTime(date);
 const currentPage = new URL(Astro.request.url).pathname;
-const allCheats = await Astro.glob<Post>("../pages/cheatsheets/*.mdx");
+const allCheats = await Astro.glob<Cheatsheet>("../pages/cheatsheets/*.mdx");
 const allSortedCheats = sortMDByDate(allCheats);
 const { prev, next } = getPreviousAndNextPosts(currentPage, allSortedCheats);
 const paginationProps = {
@@ -84,7 +84,25 @@ const paginationProps = {
 				<slot />
 			</div>
 		</article>
-		<aside
+        <!-- <aside class="invisible hidden text-right sm:sticky sm:top-20 sm:block sm:visible">
+            <h2 class="font-semibold">Table of Contents</h2>
+            <ul class="mt-4 text-xs space-y-2">
+              {
+                headings.map(({ level, slug, text }) => (
+                  level === 2 ? (
+                    <li class="line-clamp-2 hover:text-accent">
+                      <a href={`#${slug}`} aria-label={`Scroll to section: ${text}`}>
+                        <span>&#35;</span> {text}
+                      </a>
+                    </li>
+                  ) : null
+                ))
+              }
+            </ul>
+          </aside> -->
+          
+
+        <aside
 			class="invisible hidden text-right sm:sticky sm:top-20 sm:block sm:visible"
 		>
 			<h2 class="font-semibold">Table of Contents</h2>
