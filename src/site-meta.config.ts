@@ -1,5 +1,5 @@
 const siteMeta = {
-  title: "gh40.net",
+  title: "ryantiffany.com",
   description: "Mostly harmless since 1977.",
   lang: "en-US",
   ogLocale: "en_US",
