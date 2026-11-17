@@ -11,7 +11,7 @@ export default defineConfig({
 			wrap: true,
 		},
 	},
-	site: "https://gh40.net",
+	site: "https://ryantiffany.com",
         server: { port: 8080 },	
         integrations: [
 		mdx({}),

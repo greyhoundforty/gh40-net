@@ -10,7 +10,7 @@ import { Image } from "@astrojs/image/components";
 
 ## Overview
 
-In a previous [post](https://gh40.net/posts/ibmcloud-vpc-tailscale) I showed you how to deploy a Tailscale subnet router in an IBM Cloud VPC and and advertise multiple VPC subnets to your larger tailscale network. In this post we will look at another use case that includes using the [DNS Services](https://cloud.ibm.com/docs/dns-svcs?topic=dns-svcs-about-dns-services) offering as well as [Custom Resolvers](https://cloud.ibm.com/docs/dns-svcs?topic=dns-svcs-custom-resolver) to allow you to access services running in your VPC from your local network using their Fully Qualified Domain Name (FQDN).
+In a previous [post](https://ryantiffany.com/posts/ibmcloud-vpc-tailscale) I showed you how to deploy a Tailscale subnet router in an IBM Cloud VPC and and advertise multiple VPC subnets to your larger tailscale network. In this post we will look at another use case that includes using the [DNS Services](https://cloud.ibm.com/docs/dns-svcs?topic=dns-svcs-about-dns-services) offering as well as [Custom Resolvers](https://cloud.ibm.com/docs/dns-svcs?topic=dns-svcs-custom-resolver) to allow you to access services running in your VPC from your local network using their Fully Qualified Domain Name (FQDN).
 
 In this demo environment we will deploy a VPC, provision a subnet router instance, and then deploy some sample services in the VPC. We will then use the IBM Cloud DNS Services to create a custom resolver that will resolve the FQDN of these services to the private IP address of our instances. We will then connect to the subnet router using Tailscale and test the resolution of the FQDN.
 

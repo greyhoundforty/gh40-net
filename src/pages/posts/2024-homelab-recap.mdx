@@ -1,0 +1,82 @@
+---
+layout: "@/layouts/BlogPost"
+title: "2024 Homelab Recap"
+publishDate: 31 December 2024
+description: "A look at the current homelab set up as we approach the end of 2024"
+tags: ["docker", "homelab", "kubernetes", "tailscale"]
+---
+
+Inspired by post on [lorenzomodolo.com](https://lorenzomodolo.com/posts/2024-selfhosted-recap/) I wanted to catalog my current homelab setup at the end of the year for a few reasons:
+
+- I tend to test a lot of things and had many containers & services running that were **probably** very important for a short period of time but now are just taking up resources and needed to be cleaned up.  
+- I want it to act as a data point when I look at my homelab in the future to see how it has evolved.
+- I want to share what I have running in case it helps someone else with their homelab.
+- I need practice writing in general and this seems like a good way to do it.
+
+## Homelab Hardware
+
+### Callisto
+
+The Callisto server is an old iMac with a cracked screen that currently sits facing the wall under my desk (to hide its shame). The server is running Ubuntu 24 and is a mix of VMs (Libvirt/KVM) and Containers (docker engine, working on replacing with podman):
+
+#### Virtual Machines
+
+As part of my continuing effort to learn and use Kubernetes, I deployed a 2 node [Microk8s](https://microk8s.io/docs) cluster using Ubuntu 24 VMs. The main service running in the cluster is the [Tailscale Operator](https://tailscale.com/kb/1236/kubernetes-operator), which I use to expose private only services running in the cluster to other devices on my Tailnet. The server also has Rocky / Debian / Centos Stream VMs but these are usually powered down unless I am testing Ansible scripts.
+
+- mk8s-cntrl - [Microk8s](https://microk8s.io/docs) control plane instance
+- mk8s-wrkr - Microk8s worker node instance
+- tethys - Debian 12 instance
+- hera - Rocky 9 instance
+- zeus - Centos Stream instance
+
+#### Containers
+
+- [Traefik](https://doc.traefik.io/traefik/) - frontend proxy for containers using [Let's Encrypt ](https://doc.traefik.io/traefik/https/acme/)for TLS with the [DigitalOcean DNS Challenge](https://go-acme.github.io/lego/dns/digitalocean/)
+- [Actual Budget](https://actualbudget.org/) - Personal finance and budgeting application with bank and credit card sync
+- [Your Spotify](https://github.com/Yooooomi/your_spotify)
+   - Client - Web dashboard for interacting with your `Your Spotify` app server
+   - Server - The `Your Spotify` server that retrieves and stores listening history in mongodb
+   - MongoDB - Backend storage for `Your Spotify`
+- [Forgejo](https://forgejo.org/) - Open-source fork of Gitea for storing code before I make it public on `Github/Gitlab`
+- [OpenGist](https://opengist.io/docs/) - Self-hosted, open-source alternative to Github Gists.
+
+### Hyperion
+
+A Synology DS920+ NAS with 6TB of storage and 2 SSD Cache drives. While the system runs a few containers, its main function is being a backup repository for my machines (Time Machine or rsnapshot) and photos (iCloud Photos) as well as a shared drive across all of my Macs using SynologyDrive. The NAS also runs Tailscale to allow me to access the device remotely and and acts as a Subnet Router advertising my home network to the rest of my Tailnet.
+
+#### Containers
+
+- [JellyFin](https://jellyfin.org/) - I recently replaced Plex with this media server and so far, so good. If the kids like a movie and I know it will be leaving a streaming service soon, it ends up here.
+- [Prowlarr](https://prowlarr.com/) - Usenet index search client
+- [Sabnzbd](https://sabnzbd.org/) - Usenet download client integrated with Prowlarr
+- [Request Baskets](https://github.com/darklynx/request-baskets?tab=readme-ov-file)
+   - Request Baskets app - a web service to collect arbitrary HTTP requests and inspect them via RESTful API or simple web UI. I use this as a testing webhook to identify when new services are started in the homelab or to verify the format and structure of an API payload request.
+   - PostgresDB - backend storage for Request Baskets application
+- [Watchtower](https://containrrr.dev/watchtower/) - Automatic update of running containers
+
+### Jupiter
+
+A MacBook Air (13-inch, Early 2015/2017) running Ubuntu server 22. The main function of this box is as a [Prefect](https://www.prefect.io/) server, a python based orchestration and workflow platform. Currently it has just a hand full of tasks that run on a schedule to do things like check TLS expiration dates, dynamic DNS IP updates, and pulling current usage across various cloud providers.
+
+## Everyday Compute
+
+### Firefly
+
+Personal Mac mini (M1, 2020) running macOS Sonoma. My main machine outside of work hours, it runs a handful of containers and is where I do most of my development work / start new projects.
+
+### Io
+
+Work MacBook Pro (16-inch, 2021) running macOS Sequoia. This is my main machine during work hours and is where I do most of my development work.
+
+## Network Hardware
+
+- Tachus Fiber internet - Fairly symmetrical 1G fiber internet here in the Woodlands.
+- Google Wifi - Mesh Wifi system with 6 endpoints around the house. 
+- A few un-managed switches for connecting printer, AppleTV, etc in the office.
+
+## 2025 Updates and ideas
+
+- Networking is one of the main places I want to spend time/money on upgrades in 2025. I want to introduce VLAN segmentation and better logging/visibility into my homelab as well as native support for VPN in the network router. 
+- Re-introduce [Pi-hole](https://pi-hole.net/) to the homelab. I was running this previously on a Raspberry Pi that finally kicked the bucket and has yet to be replaced. 
+- Add in [Home Assistant Yellow](https://www.home-assistant.io/yellow/) for tying in smart devices that don't natively interact with Homekit / Apple Home and to act as a home dashboard for an older iPad I want to setup in the kitchen.
+ 

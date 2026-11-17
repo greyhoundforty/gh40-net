@@ -1,0 +1,55 @@
+---
+layout: "@/layouts/BlogPost"
+title: "New project: IBM Cloud VPC MCP Server"
+publishDate: 04 June 2025
+description: "Python based MCP server to interact with IBM Cloud VPCs"
+tags: ["ibmcloud", "mcp", "project", "python"]
+---
+
+I took at a shot at creating a docker based Model Context Protocol (MCP) server that provides comprehensive IBM Cloud VPC resource management and security analysis capabilities. This server enables seamless interaction with IBM Cloud VPC infrastructure through a standardized protocol interface for apps like Claude Desktop. 
+
+https://github.com/greyhoundforty/ibmcloud-vpc-mcp
+
+![Listing available IBM MCP tasks](https://bear-images.sfo2.cdn.digitaloceanspaces.com/gh40/08am.webp)
+
+## 🎯 Usage Examples
+
+### Security Analysis
+
+**Find SSH exposure across all VPCs:**
+```bash
+# Check for SSH open to internet in us-south region
+analyze_ssh_security_groups --region us-south
+
+# Check specific VPC
+analyze_ssh_security_groups --region us-south --vpc_id vpc-12345
+```
+
+**Custom protocol analysis:**
+```bash
+# Find RDP exposure
+analyze_security_groups_by_protocol --region us-south --protocol tcp --port 3389
+
+# Find database exposure  
+analyze_security_groups_by_protocol --region us-south --protocol tcp --port 3306
+```
+
+### Resource Management
+
+**List VPCs:**
+```bash
+# All regions
+list_vpcs
+
+# Specific region
+list_vpcs --region us-south
+```
+
+**Get VPC summary:**
+```bash
+get_vpc_resources_summary --vpc_id vpc-12345 --region us-south
+```
+
+## Output Example
+
+![Result of security scan](https://bear-images.sfo2.cdn.digitaloceanspaces.com/gh40/43am.webp)

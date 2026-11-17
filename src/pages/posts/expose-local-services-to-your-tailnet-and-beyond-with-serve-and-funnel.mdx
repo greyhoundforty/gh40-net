@@ -1,0 +1,131 @@
+---
+layout: "@/layouts/BlogPost"
+title: "Expose local services to your Tailnet and beyond with Serve and Funnel"
+publishDate: 11 December 2024
+description: "Use Tailscale to route traffic to local applications"
+tags: ["docker", "tailscale"]
+---
+
+I am a big fan of Tailscale and I recently discovered that it allows you to expose local running services on your system to other devices on your Tailnet and even to the public internet complete with TLS. The 2 services I will be highlighting today are: [Serve](https://tailscale.com/kb/1312/serve) and [Funnel](https://tailscale.com/kb/1223/funnel)
+
+![tailscale-serve-funnel](https://bear-images.sfo2.cdn.digitaloceanspaces.com/gh40/tailscale-serve-funnel.webp)
+
+
+> Both of these services require that you enable [HTTPS Certificates](https://tailscale.com/kb/1153/enabling-https) for your Tailnet. 
+
+## Tailscale Serve
+
+The **Serve** function in Tailscale allows you to route traffic from other devices on your Tailnet to a local service running on your device. This means for example I can be running a docker container on my mac at home that only exposes port 8080 on localhost and provide an encrypted endpoint I can use to connect from my phone, ipad or any other device on my Tailnet. 
+
+### Testing
+
+An easy way to test this is with the `whoami` docker container:
+
+```shell
+docker run -d --rm -p 8180:80 traefik/whoami
+```
+
+Curl the container endpoint to ensure it is running: `curl http://localhost:8180`
+
+```shell
+callisto :: ~ » curl http://localhost:8180
+Hostname: ee16ef47f1c1
+IP: 127.0.0.1
+IP: ::1
+IP: 172.17.0.2
+RemoteAddr: 172.17.0.1:37056
+GET / HTTP/1.1
+Host: localhost:8180
+User-Agent: curl/8.7.1
+Accept: */*
+```
+
+To expose this service to our Tailnet we will run the **serve** command and specify the port, `8180` in this case:
+
+```
+callisto :: ~ » tailscale serve 8180
+Available within your tailnet:
+
+https://io.tail36707.ts.net/
+|-- proxy http://127.0.0.1:8180
+
+Press Ctrl+C to exit.
+```
+
+From another device connected to our Tailscale network (Tailnet), we can now browse or curl our TLS-enabled endpoint. 
+
+```
+ryan@io:~|⇒  tailscale status | grep io
+100.93.71.112   io                   74wzsgmt6m@  macOS   -
+
+ryan@io:~|⇒  curl https://callisto.tail36707.ts.net/
+Hostname: 5f1224ef7307
+IP: 127.0.0.1
+IP: ::1
+IP: 172.17.0.2
+RemoteAddr: 172.17.0.1:59798
+GET / HTTP/1.1
+Host: callisto.tail36707.ts.net
+User-Agent: curl/8.7.1
+Accept: */*
+Accept-Encoding: gzip
+Tailscale-Headers-Info: https://tailscale.com/s/serve-headers
+Tailscale-User-Login: 74wzsgxxxxxxxx
+Tailscale-User-Name: 74wxxxxxx
+Tailscale-User-Profile-Pic:
+X-Forwarded-For: 100.93.71.112
+X-Forwarded-Host: callisto.tail36707.ts.net
+X-Forwarded-Proto: https
+``` 
+
+If I disconnect from my Tailnet the device can no longer reach the endpoint:
+
+```shell
+ryan@io:~|⇒  sudo tailscale down
+
+ryan@io:~|⇒  tailscale status
+Tailscale is stopped.
+
+ryan@io:~|⇒  curl https://callisto.tail36707.ts.net/
+curl: (6) Could not resolve host: callisto.tail36707.ts.net
+```
+
+Thanks Tailscale [Magic DNS!](https://tailscale.com/kb/1081/magicdns)
+
+## Tailscale Funnel
+
+While **Serve** exposed our local service to devices on our Tailnet, the **Funnel** service allows us to route traffic from the wider internet to the local service running in the Tailnet. This means anyone with the URL can interact with the service. This is really handy if you want to have a users/coworkers test something without adding more devices/users to your Tailnet. 
+
+### Testing
+
+Since **serve** and **funnel** can't be running at the same time, we will stop our **serve** command with `ctrl+c` and then expose our container to the wider internet with **funnel**:
+
+```shell
+callisto :: ~ » tailscale serve 8180
+Available within your tailnet:
+
+https://callisto.tail36707.ts.net/
+|-- proxy http://127.0.0.1:8180
+
+Press Ctrl+C to exit.
+^C%
+
+callisto :: ~ » tailscale funnel 8180
+Available on the internet:
+
+https://callisto.tail36707.ts.net/
+|-- proxy http://127.0.0.1:8180
+
+Press Ctrl+C to exit.
+```
+
+Now anyone can get my local service securely for quick testing and feedback by visiting `https://callisto.tail36707.ts.net/`. 
+
+![Screenshot 2024-12-11 at 10](https://bear-images.sfo2.cdn.digitaloceanspaces.com/gh40/05-am.webp)
+
+---
+
+While my `services` in this case were extraordinarily simplistic, the **serve** and **funnel** commands in Tailscale are quite powerful. Find some more examples at the links below:
+
+- [Serve Examples](https://tailscale.com/kb/1313/serve-examples)
+- [Funnel Examples](https://tailscale.com/kb/1247/funnel-examples)
