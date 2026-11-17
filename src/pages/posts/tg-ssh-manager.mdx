@@ -1,0 +1,36 @@
+---
+layout: "@/layouts/BlogPost"
+title: "Introducing tg SSH connection manager"
+publishDate: 03 July 2025
+description: "Integrate cookiecutter with Claude Desktop to generate new project scaffolding."
+tags: ["claude", "python", "ssh"]
+---
+
+To scratch a specific itch around the number of VMs I interact with on a weekly basis, I took a stab at creating a python TUI application for managing SSH connections. Introducing **Tengingarstjóri**
+
+`tg` for short, is a Python TUI based SSH connection manager that integrates seamlessly with your existing SSH configuration.
+
+## Features
+
+- 🔧 **Full SSH Connection Management**: Add, remove, edit, and delete SSH connections
+- 📋 **Enhanced List Views**: Detailed and compact formats with advanced option display
+- 🚀 **ProxyJump Support**: Seamless bastion host and jump server configuration
+- 🔀 **Port Forwarding**: Local, remote, and dynamic (SOCKS) port forwarding
+- 🔑 **Smart SSH Key Management**: Automatic key discovery and defaults
+- 🔗 **Non-invasive SSH Config Integration**: Preserves your existing setup
+- 🎯 **Fast CLI Commands**: Intuitive `tg` prefix with rich output formatting
+
+## Demo
+
+<a href="https://asciinema.org/a/725744" target="_blank"><img src="https://asciinema.org/a/725744.svg" /></a>
+
+## Architecture
+
+Rather than modifying your main SSH config directly, Tengingarstjóri will:
+
+1. **Create a managed config file**: `~/.ssh/config.tengingarstjori`
+2. **Add a single line to main config to include our new file**: `Include ~/.ssh/config.tengingarstjori`
+3. **Manage connections separately**: All additions/changes go to the managed file
+4. **Preserve your existing SSH setup**: Your existing SSH config remains untouched
+
+Check out the Github repo [here](https://github.com/greyhoundforty/tengingarstjori). 

@@ -1,0 +1,27 @@
+---
+layout: "@/layouts/BlogPost"
+title: "Quick tip: Use Claude with Opencommit"
+publishDate: 11 June 2025
+description: "Use Claude as the AI operator for the opencommit git utility"
+tags: ["claude", "opencommit"]
+---
+
+I have never been great at git commit messages. Maybe it's because I am mostly a solo admin working on personal projects and I am not a developer by trade. Through my work and general curiosity I have picked up some skills but the lack of a formal developer training path means crafting effective commit messages is not something I really picked up. 
+
+Thanks to the [opencommit](https://github.com/di-sukharev/opencommit) project I don't have to worry about this anymore. The tool uses LLMs to automatically generate commit messages based on the tracked changes. In my initial testing it has done a much better job at providing actually useful messages than I ever was:
+
+![oco commit message example](https://bear-images.sfo2.cdn.digitaloceanspaces.com/gh40/28am.webp)
+
+## Use with Claude
+
+I use Claude as my main AI provider and thankfully the `oco` command is completely customizable on AI providers, models, endpoints, etc. Here are the shell commands to configure `oco` to work with the Anthropic API:
+
+```shell
+oco config set OCO_API_URL=https://api.anthropic.com
+oco config set OCO_API_KEY=<YOUR CLAUDE API KEY>
+oco config set OCO_AI_PROVIDER=anthropic 
+oco config set OCO_EMOJI=true 
+oco config set OCO_MODEL=claude-3-7-sonnet-latest 
+```
+
+These values can also be set in the file `~/.opencommit`. The full list of supported options can be found in the [Github Readme](https://github.com/di-sukharev/opencommit?tab=readme-ov-file#configuration). 
