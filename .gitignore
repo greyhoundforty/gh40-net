@@ -22,3 +22,7 @@ pnpm-debug.log*
 # misc
 *.pem
 .cache
+
+# python
+__pycache__/
+*.pyc

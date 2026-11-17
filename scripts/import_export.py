@@ -27,7 +27,9 @@ TAG_RENAMES = {"today-i-found": "todayifound"}
 
 INLINE_CODE = re.compile(r"(`+[^`\n]*`+)")
 # a "<" that does not start a tag, closing tag, comment, or autolink
-BARE_LT = re.compile(r"<(?!/?[A-Za-z][^>\n]*>|!--|https?://[^>\s]*>)")
+BARE_LT = re.compile(r"<(?!/?[A-Za-z][^>\n]*>|!--)")
+# MDX has no <https://...> autolinks; turn them into markdown links
+AUTOLINK = re.compile(r"<(https?://[^>\s]+)>")
 
 
 def parse(text: str) -> tuple[dict, str]:
@@ -48,11 +50,14 @@ def plain_first_line(body: str, limit: int = 160) -> str:
         line = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", line)
         line = re.sub(r"[#*_`>]", "", line).strip()
         if line:
-            return line[:limit]
+            if len(line) <= limit:
+                return line
+            return line[:limit].rsplit(" ", 1)[0].rstrip(",;:-") + "…"
     return ""
 
 
 def escape_segment(seg: str) -> str:
+    seg = AUTOLINK.sub(r"[\1](\1)", seg)
     seg = seg.replace("{", r"\{").replace("}", r"\}")
     return BARE_LT.sub("&lt;", seg)
 

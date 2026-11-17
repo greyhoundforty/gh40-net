@@ -1,3 +1,4 @@
+import json
 import re
 import unittest
 from pathlib import Path
@@ -18,6 +19,14 @@ RENAMED = {
 }
 
 
+VERCEL_FILE = ROOT / "vercel.json"
+VERCEL = (
+    {r["source"].strip("/"): r["destination"] for r in json.loads(VERCEL_FILE.read_text()).get("redirects", [])}
+    if VERCEL_FILE.exists()
+    else {}
+)
+
+
 class RedirectTests(unittest.TestCase):
     def test_every_target_exists_on_the_site(self):
         self.assertTrue(REDIRECTS, "no redirect rules found in nginx.conf")
@@ -35,6 +44,11 @@ class RedirectTests(unittest.TestCase):
             slug = md.stem
             expected = f"/posts/{RENAMED.get(slug, slug)}/"
             self.assertEqual(REDIRECTS.get(slug), expected, slug)
+
+    def test_vercel_redirects_match_nginx_redirects(self):
+        self.assertEqual(VERCEL, REDIRECTS)
+        for r in json.loads(VERCEL_FILE.read_text())["redirects"]:
+            self.assertTrue(r["permanent"], r["source"])
 
     def test_old_pages_and_www_are_handled(self):
         for page in ("cheat-sheets", "today-i-found", "projects", "elsewhere"):

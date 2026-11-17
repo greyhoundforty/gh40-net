@@ -44,10 +44,18 @@ class ConvertTests(unittest.TestCase):
         self.assertIn("echo {keep} < this", out)
         self.assertIn("`{code}`", out)
 
-    def test_real_html_tags_and_autolinks_survive(self):
+    def test_real_html_tags_survive_and_autolinks_become_markdown_links(self):
         out = convert_text("---\ntitle: T\npublished_date: 2025-01-01T00:00:00+00:00\n---\n\n<img src=\"a.png\"> and <https://x.y>\n")
         self.assertIn('<img src="a.png">', out)
-        self.assertIn("<https://x.y>", out)
+        self.assertIn("[https://x.y](https://x.y)", out)
+        self.assertNotIn("<https://x.y>", out)
+
+    def test_fallback_description_is_cut_at_a_word_boundary(self):
+        words = " ".join(["alpha"] * 40)
+        out = convert_text(f"---\ntitle: T\npublished_date: 2025-01-01T00:00:00+00:00\n---\n\n{words}\n")
+        desc = [l for l in out.splitlines() if l.startswith("description:")][0]
+        self.assertTrue(desc.endswith('alpha…"'), desc)
+        self.assertLessEqual(len(desc), len('description: ""') + 161)
 
 
 if __name__ == "__main__":
