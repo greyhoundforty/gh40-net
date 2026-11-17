@@ -34,7 +34,14 @@ const paginationProps = {
 ---
 
 <BaseLayout meta={{ title, description }}>
-	<div class="sm:grid sm:grid-cols-[3fr_1fr] sm:gap-x-10 sm:items-start">
+	<div
+		id="post-grid"
+		data-toc="open"
+		class:list={[
+			"sm:grid sm:gap-x-10 sm:items-start",
+			headings.length > 0 ? "sm:grid-cols-[3fr_1fr]" : "sm:grid-cols-1",
+		]}
+	>
 		<article>
 			<h1 class="title">{title}</h1>
 			<span
@@ -84,29 +91,89 @@ const paginationProps = {
 				<slot />
 			</div>
 		</article>
-		<aside
-			class="invisible hidden text-right sm:sticky sm:top-20 sm:block sm:visible"
-		>
-			<h2 class="font-semibold">Table of Contents</h2>
-			<ul class="mt-4 text-xs space-y-2">
-				{
-					headings.map(({ slug, text }) => (
-						<li class="line-clamp-2 hover:text-accent">
-							<a href={`#${slug}`} aria-label={`Scroll to section: ${text}`}>
-								<span>&#35;</span> {text}
-							</a>
-						</li>
-					))
-				}
-			</ul>
-		</aside>
+		{
+			headings.length > 0 && (
+				<aside
+					id="toc"
+					class="invisible hidden text-right sm:sticky sm:top-20 sm:block sm:visible"
+				>
+					<div class="flex items-center justify-end gap-x-2">
+						<h2 id="toc-heading" class="font-semibold">
+							Table of Contents
+						</h2>
+						<button
+							id="toc-toggle"
+							type="button"
+							aria-expanded="true"
+							aria-controls="toc-list"
+							class="px-1.5 py-0.5 text-xs border rounded border-textColor hover:text-accent hover:border-accent"
+						>
+							<span id="toc-toggle-label">Hide</span> <kbd>t</kbd>
+						</button>
+					</div>
+					<ul id="toc-list" class="mt-4 text-xs space-y-2">
+						{headings.map(({ slug, text }) => (
+							<li class="line-clamp-2 hover:text-accent">
+								<a href={`#${slug}`} aria-label={`Scroll to section: ${text}`}>
+									<span>&#35;</span> {text}
+								</a>
+							</li>
+						))}
+					</ul>
+				</aside>
+			)
+		}
 	</div>
 	<div class="mt-24">
 		<Paginator {...paginationProps} />
 	</div>
 </BaseLayout>
 
+<script>
+	const grid = document.getElementById("post-grid");
+	const toggle = document.getElementById("toc-toggle");
+	if (grid && toggle) {
+		const label = document.getElementById("toc-toggle-label");
+		const apply = (open: boolean) => {
+			grid.dataset.toc = open ? "open" : "closed";
+			toggle.setAttribute("aria-expanded", String(open));
+			if (label) label.textContent = open ? "Hide" : "Show";
+		};
+		let open = true;
+		try {
+			open = localStorage.getItem("toc") !== "closed";
+		} catch {
+			// storage unavailable: keep default
+		}
+		apply(open);
+		const flip = () => {
+			open = !open;
+			apply(open);
+			try {
+				localStorage.setItem("toc", open ? "open" : "closed");
+			} catch {
+				// storage unavailable: state lasts for this page only
+			}
+		};
+		toggle.addEventListener("click", flip);
+		document.addEventListener("keydown", (e) => {
+			if (e.key !== "t" || e.ctrlKey || e.metaKey || e.altKey) return;
+			const el = e.target as HTMLElement | null;
+			if (el?.closest("input, textarea, select, [contenteditable]")) return;
+			flip();
+		});
+	}
+</script>
+
 <style>
+	/* Collapsed ToC: hide the list and heading, article takes full width */
+	:global(#post-grid[data-toc="closed"]) {
+		@apply sm:grid-cols-[1fr_auto];
+	}
+	:global(#post-grid[data-toc="closed"] #toc-list),
+	:global(#post-grid[data-toc="closed"] #toc-heading) {
+		@apply hidden;
+	}
 	/* Hide the weird code block adding the language */
 	:global(article pre .language-id) {
 		@apply hidden;
