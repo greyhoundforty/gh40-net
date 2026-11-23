@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.github
+gh40-export
+.superpowers
+.playwright-mcp
+scripts/__pycache__
+docs
