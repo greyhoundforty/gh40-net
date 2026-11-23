@@ -42,6 +42,15 @@ const paginationProps = {
 			headings.length > 0 ? "sm:grid-cols-[3fr_1fr]" : "sm:grid-cols-1",
 		]}
 	>
+		<script is:inline>
+			try {
+				if (localStorage.getItem("toc") === "closed") {
+					document.getElementById("post-grid").dataset.toc = "closed";
+				}
+			} catch (e) {
+				/* storage unavailable: leave open */
+			}
+		</script>
 		<article>
 			<h1 class="title">{title}</h1>
 			<span
@@ -106,6 +115,7 @@ const paginationProps = {
 							type="button"
 							aria-expanded="true"
 							aria-controls="toc-list"
+							aria-label="Hide table of contents (t)"
 							class="px-1.5 py-0.5 text-xs border rounded border-textColor hover:text-accent hover:border-accent"
 						>
 							<span id="toc-toggle-label">Hide</span> <kbd>t</kbd>
@@ -138,6 +148,10 @@ const paginationProps = {
 			grid.dataset.toc = open ? "open" : "closed";
 			toggle.setAttribute("aria-expanded", String(open));
 			if (label) label.textContent = open ? "Hide" : "Show";
+			toggle.setAttribute(
+				"aria-label",
+				`${open ? "Hide" : "Show"} table of contents (t)`
+			);
 		};
 		let open = true;
 		try {
@@ -157,9 +171,18 @@ const paginationProps = {
 		};
 		toggle.addEventListener("click", flip);
 		document.addEventListener("keydown", (e) => {
-			if (e.key !== "t" || e.ctrlKey || e.metaKey || e.altKey) return;
-			const el = e.target as HTMLElement | null;
-			if (el?.closest("input, textarea, select, [contenteditable]")) return;
+			if (e.key.toLowerCase() !== "t" || e.repeat) return;
+			if (e.ctrlKey || e.metaKey || e.altKey) return;
+			const el = e.target instanceof Element ? e.target : null;
+			if (
+				el?.closest(
+					'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
+				)
+			)
+				return;
+			// the ToC is hidden on small screens; don't change saved state there
+			if (getComputedStyle(toggle).display === "none" || !toggle.offsetParent)
+				return;
 			flip();
 		});
 	}
